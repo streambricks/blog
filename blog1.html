@@ -1,0 +1,266 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>Stream Bricks:: Blogs Series</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Page Wrapper -->
+			<div id="page-wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<h1><a href="index.html">Blog Series</a></h1>
+						<nav>
+							<a href="#menu">Menu</a>
+						</nav>
+					</header>
+
+				<!-- Menu -->
+					<nav id="menu">
+						<div class="inner">
+							<h2>Menu</h2>
+							<ul class="links">
+								<li><a href="index.html">Home</a></li>
+								<li><a href="blog1.html">Blogs</a></li>
+								<li><a href="pricing.html">Pricing</a></li>
+							</ul>
+							<a href="#" class="close">Close</a>
+						</div>
+					</nav>
+
+				<!-- Wrapper -->
+					<section id="wrapper">
+						<header>
+							<div class="inner">
+								<h2>Insight into modern streaming platforms</h2>
+								<p>Why Apache Pulsar?</p>
+							</div>
+						</header>
+
+						<!-- Content -->
+							<div class="wrapper">
+								<div class="inner">
+
+									<h2 class="major">Messaging and Streaming Platform</h2>
+									<p>Publish/Subscribe messaging is a type of asynchronous communication between services, commonly used in serverless and microservices architectures. In this model, messages sent to a topic are instantly delivered to all its subscribers. Pub/Sub messaging facilitates event-driven architectures and helps decouple applications, enhancing performance, reliability, and scalability. <br/><br/>
+
+									Stream processing involves the continuous and concurrent handling of data in real time. As businesses increasingly rely on timely insights, the need for efficient stream processing continues to grow. Beyond handling large data volumes, the key challenge is processing data swiftly to enable organizations to respond to dynamic business conditions instantly.</p>
+
+									<p>Pulsar and Kafka are both excellent alternatives to traditional message brokers, which are used to decouple processing from data producers, buffer unprocessed messages, and more. Compared to most messaging systems, Pulsar and Kafka offer higher throughput, built-in partitioning, replication, and fault tolerance, making them well-suited for large-scale message processing applications. </br></br>
+
+									However, they differ in message modeling and capabilities, which are crucial factors when selecting the right messaging system for a specific use case.</p>
+
+									<h2 class="major">Horizontally Scalable</h2>
+
+
+										Apache Pulsar achieves horizontal scalability through Apache BookKeeper’s segment-oriented architecture, which allows seamless distribution of topic data across multiple bookies (BookKeeper storage nodes). This makes Pulsar fundamentally different from Apache Kafka in terms of scalability.
+
+										<p>
+
+										<h3>Why Pulsar is Horizontally Scalable</h3>
+										
+										<h5>Segmented Storage Model:</h5>
+										<ul style="list-style-type: square;">
+										  <li>Unlike Kafka, where a topic’s partitions are tied to a specific broker, Pulsar splits topic data into segments.</li>
+										  <li>These segments are distributed across multiple bookies, enabling independent scaling of storage and processing.</li>
+										</ul>
+
+										
+										
+										<h5>Decoupling of Brokers & Storage:</h5>
+										<ul style="list-style-type: square;">
+										  <li>Kafka brokers are responsible for both message routing and storage, which creates a bottleneck.</li>
+										  <li>In Pulsar, brokers act as stateless routers, handling only message distribution while BookKeeper manages storage.
+										Dynamic Load Distribution.</li>
+										</ul>
+
+										<h5>Dynamic Load Distribution:</h5>
+										<ul style="list-style-type: square;">
+										  <li>New bookies can be added at any time, and Pulsar automatically redistributes topic segments across them.</li>
+										  <li>Since a topic’s data is not confined to a single broker, adding more bookies increases throughput and storage.</li>
+										</ul>
+
+
+										<h5>Parallel Reads & Writes:</h5>
+										<ul style="list-style-type: square;">
+										  <li>Pulsar enables parallel message ingestion and consumption, as multiple bookies handle different segments of a topic.</li>
+										  <li>Kafka, on the other hand, restricts a partition to a single broker, limiting its ability to scale horizontally.</li>
+										</ul>
+
+
+										<h5>Fault Tolerance & Replication:</h5>
+										<ul style="list-style-type: square;">
+										  <li>Pulsar’s segment-based replication ensures redundancy across bookies.</li>
+										  <li>If a bookie fails, Pulsar dynamically redistributes segments, maintaining availability and durability.</li>
+										</ul>
+										</br></br>
+
+										<img src="images/segment.png" alt="segmented oriented architecture" width="800" height="500"  />
+
+										</p>
+
+
+										<p>
+
+										<h3>Why Kafka Cannot Scale Horizontally</h3>
+										
+										<h5>Topic-Broker Binding:</h5>
+										<ul style="list-style-type: square;">
+										  <li>In Kafka, a topic’s partitions are tightly bound to a single broker, meaning data cannot be distributed dynamically across multiple brokers.</li>
+										</ul>
+
+										
+										
+										<h5>Broker Bottleneck:</h5>
+										<ul style="list-style-type: square;">
+										  <li>Each partition is owned by one broker, and adding more brokers does not increase a partition’s throughput. The only way to scale in Kafka is by adding more partitions, which introduces operational complexity and rebalancing overhead.</li>
+
+										</ul>
+
+										<h5>Limited Storage Scalability:</h5>
+										<ul style="list-style-type: square;">
+										  <li>Since Kafka brokers store topic data, storage capacity is limited by the individual broker’s disk space, whereas Pulsar offloads storage to BookKeeper, allowing independent scaling of storage and compute.</li>
+										</ul>
+									</p>
+
+									<p>
+										<b>Conclusion</b>
+										Apache Pulsar’s decoupled architecture allows true horizontal scaling, where adding more bookies increases both storage and throughput. In contrast, Kafka’s architecture is inherently limited because topics are tightly coupled to brokers, preventing seamless distribution of data across multiple brokers. 🚀
+
+									</p>
+
+
+									<h2 class="major">Geo-Replication</h2>
+
+
+										Geo-replication is a common mechanism used for <b>disaster recovery and message distribution</b>. It involves replicating persistently stored messages across multiple clusters, often distributed across different data centers globally or within a country.
+
+										<p>
+
+											<b>Apache Kafka</b> offers MirrorMaker, a standalone tool that must be installed and managed by the Kafka cluster operator to enable geo-replication for topics.</br>
+
+											In contrast, <b>Pulsar provides built-in support</b> for geo-replication, allowing messages to be reliably but asynchronously replicated across clusters without requiring additional tools.
+										
+										</p>
+
+
+									<h2 class="major">Streaming and Queuing</h2>
+
+
+										Apache Pulsar achieves horizontal scalability through Apache BookKeeper’s segment-oriented architecture, which allows seamless distribution of topic data across multiple bookies (BookKeeper storage nodes). This makes Pulsar fundamentally different from Apache Kafka in terms of scalability.
+
+										<p>
+
+										<h3>a. Stream:</h3>
+
+										One of the main distinctions between Pulsar and Kafka lies in how messages are consumed and acknowledged (committed) after processing. In modern messaging systems, message consumption is typically categorized into two types: Streaming and Queueing.
+										<br/>
+										
+										<ul style="list-style-type: square;">
+										  <li>Streaming is used for scenarios where it is crucial that messages are consumed in the same order in which they were written. Both Kafka and Pulsar support streaming and ensure message ordering in their respective messaging models.</li>
+										  <li>In an event-driven architecture, a common use case for streaming is in data pipelines with multiple stages. Raw input data is consumed from a topic, aggregated, enriched or transformed, and then written to new topics for further processing.</li>
+										  <li>Kafka offers a robust stream processing library called Kafka Streams, which supports data processing. Kafka Streams serves as an alternative to other open-source stream processing tools like Apache Storm and Apache Samza.</li>
+										  <li>Pulsar, on the other hand, provides adapters for Storm and Spark, enabling messages from Pulsar topics to be injected into these processing pipelines, with the output then written to other Pulsar topics for further follow-up processing.</li>
+										</ul>
+
+										
+										
+										<h3>b. Queue:</h3>
+
+										Queuing refers to message processing that does not require any specific order and can be processed in parallel across multiple processes or application nodes. Message queuing allows multiple consumers to receive messages from a single messaging channel, where each consumer can acknowledge or commit messages individually. Stateless applications often don't require strict ordering but need the ability to acknowledge or remove messages independently while enabling parallel consumption.
+										</br>
+										</br>
+										Kafka does not natively support message queuing or message distribution across multiple consumers. Kafka only supports exclusive consumers, meaning that each partition can only be processed by one consumer within a consumer group. Parallelism can only be scaled by partitioning or repartitioning the topic.
+										</br></br>
+										In contrast, Pulsar supports message queues through shared consumers, allowing message processing throughput to be increased by scaling the number of consumers without needing to repartition the topic. Pulsar also supports partitioning independently of the number of consumers and allows consumers to commit or acknowledge individual messages after processing.
+										</br></br>
+										This difference in design makes Pulsar more flexible for parallel message consumption, while Kafka’s partitioning model is more rigid.
+										
+										<ul style="list-style-type: square;">
+										  <li>Streaming is used for scenarios where it is crucial that messages are consumed in the same order in which they were written. Both Kafka and Pulsar support streaming and ensure message ordering in their respective messaging models.</li>
+										  <li>In an event-driven architecture, a common use case for streaming is in data pipelines with multiple stages. Raw input data is consumed from a topic, aggregated, enriched or transformed, and then written to new topics for further processing.</li>
+										  <li>Kafka offers a robust stream processing library called Kafka Streams, which supports data processing. Kafka Streams serves as an alternative to other open-source stream processing tools like Apache Storm and Apache Samza.</li>
+										  <li>Pulsar, on the other hand, provides adapters for Storm and Spark, enabling messages from Pulsar topics to be injected into these processing pipelines, with the output then written to other Pulsar topics for further follow-up processing.</li>
+										</ul>
+									</p>
+
+
+									<h2 class="major">Storage and retention</h2>
+
+
+										To ensure guaranteed message delivery, a messaging system must persist and retain messages until they have been processed and acknowledged by all consumer groups or subscribers. Both Pulsar and Kafka adopt different approaches to managing message retention.
+
+										<p>
+
+											<b>Kafka</b> uses time-based retention, meaning messages are deleted after a configured period, regardless of whether they’ve been consumed or acknowledged by the consumer. </br>
+
+											In contrast, <b>Pulsar</b> retains messages until they are consumed and acknowledged by all consumer groups or subscribers. This behavior can be modified by setting an explicit message expiry time for a topic, causing messages to be deleted after that period, even without acknowledgement. Additionally, Pulsar allows messages to be retained beyond acknowledgement by configuring a specific retention period for the topic.
+
+										
+										</p>
+
+
+									<h2 class="major">Committing messages</h2>
+
+
+										Some applications consume messages but require a relatively longer time to process them—ranging from seconds to minutes. Additionally, the processing is distributed across multiple nodes within the application cluster. A key requirement for such applications is the ability to commit individual messages to ensure that already processed messages are not redelivered while unprocessed messages remain available until they are explicitly committed.
+
+										<p>
+											</br>
+
+											<b>Kafka</b> does not fit well in this use case due to its limitation with high-watermark commits. In Kafka, a consumer can only inform the broker, "I’ve processed up to this point," rather than "I’ve processed this specific message." To work around this, consumer applications must implement additional logic to track the state of committed messages and update the watermark accordingly, adding complexity.</br></br>
+
+											In contrast, <b>Pulsar</b> natively supports individual message acknowledgment and ensures that the broker retains unacknowledged messages until they are explicitly acknowledged or committed. Additionally, consumers can configure an acknowledgment timeout, allowing the broker to automatically redeliver unacknowledged messages if they are not acknowledged within the specified timeframe.
+
+										
+										</p>
+
+
+
+
+
+
+									<section class="features">
+										<article>
+											<a href="#" class="image"><img src="images/capability.png" alt="" width="500" /></a>
+											<h3 class="major">Pulsar Vs Kafka Feature Parity</h3>
+											<p>Apache Pulsar is the default choice for any of your usecase.</p>
+											<a href="#" class="special">Learn more</a>
+										</article>
+										
+									</section>
+
+								</div>
+							</div>
+
+					</section>
+
+				<!-- Footer -->
+					<section id="footer">
+						<div class="inner">
+							
+							
+							<ul class="copyright">
+								<li>&copy; Stream-Bricks. All rights reserved.</li><li>Design: <a href="http://html5up.net">Stream Bricks</a></li>
+							</ul>
+						</div>
+					</section>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
