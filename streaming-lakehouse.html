@@ -1,0 +1,182 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>StreamBricks — How the Streaming Lakehouse Works</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="A deep dive into the Streaming Lakehouse: a single-copy storage engine on Apache Pulsar & BookKeeper that unifies pub-sub, AI feature serving, SQL, and native point-in-time joins." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="assets/css/streambricks.css" />
+	</head>
+	<body>
+
+		<!-- Navigation -->
+		<nav class="site-nav">
+			<div class="container">
+				<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+				<div class="nav-links" id="navLinks">
+					<a href="index.html">Home</a>
+					<a href="streaming-lakehouse.html" class="active">Platform</a>
+					<a href="index.html#usecases">AI Use Cases</a>
+					<a href="blog1.html">Blog</a>
+					<a href="service.html">Pricing</a>
+				</div>
+				<div class="nav-cta">
+					<a href="index.html#contact" class="btn btn-ghost">Talk to us</a>
+					<a href="index.html#contact" class="btn btn-primary">Request early access</a>
+					<button class="nav-toggle" id="navToggle" aria-label="Menu">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+					</button>
+				</div>
+			</div>
+		</nav>
+
+		<main class="container">
+			<div class="article">
+
+				<div class="article-hero">
+					<span class="eyebrow">Platform deep dive</span>
+					<h1>How the <span class="grad-text">Streaming Lakehouse</span> works</h1>
+					<p class="dek">One copy of data for messaging, AI features, and SQL — built on Apache Pulsar &amp; BookKeeper.</p>
+				</div>
+
+				<div class="article-banner">
+					<svg viewBox="0 0 800 300" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture overview">
+						<defs><linearGradient id="bg1" x1="0" y1="0" x2="800" y2="300" gradientUnits="userSpaceOnUse"><stop stop-color="#a78bfa"/><stop offset="0.5" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+						<rect width="800" height="300" fill="#0b0d1a"/>
+						<rect x="320" y="110" width="160" height="80" rx="14" fill="#11142a" stroke="url(#bg1)" stroke-width="2"/>
+						<rect x="338" y="128" width="124" height="7" rx="3.5" fill="url(#bg1)"/>
+						<rect x="338" y="142" width="88" height="7" rx="3.5" fill="url(#bg1)" opacity="0.6"/>
+						<rect x="338" y="156" width="124" height="7" rx="3.5" fill="url(#bg1)"/>
+						<text x="400" y="178" text-anchor="middle" fill="#a3a8c3" font-family="JetBrains Mono, monospace" font-size="10">columnar Vortex pages</text>
+						<rect x="340" y="30" width="120" height="40" rx="12" fill="#161a33" stroke="rgba(140,150,220,0.3)"/>
+						<text x="400" y="55" text-anchor="middle" fill="#eef0fb" font-family="Inter" font-size="13" font-weight="600">Pulsar Producers</text>
+						<path d="M400 70 L400 110" stroke="url(#bg1)" stroke-width="2" stroke-dasharray="4 5"/>
+						<g font-family="Inter" font-size="12" font-weight="600" fill="#eef0fb">
+							<rect x="60" y="235" width="180" height="44" rx="12" fill="#161a33" stroke="rgba(140,150,220,0.3)"/>
+							<text x="150" y="262" text-anchor="middle">Pub-Sub Broker</text>
+							<rect x="310" y="235" width="180" height="44" rx="12" fill="#161a33" stroke="rgba(140,150,220,0.3)"/>
+							<text x="400" y="262" text-anchor="middle">DataLake Broker</text>
+							<rect x="560" y="235" width="180" height="44" rx="12" fill="#161a33" stroke="rgba(140,150,220,0.3)"/>
+							<text x="650" y="262" text-anchor="middle">SQL · Temporal Joins</text>
+						</g>
+						<path d="M360 190 C260 215, 200 215, 150 235" stroke="url(#bg1)" stroke-width="2" fill="none"/>
+						<path d="M400 190 L400 235" stroke="url(#bg1)" stroke-width="2" fill="none"/>
+						<path d="M440 190 C540 215, 600 215, 650 235" stroke="url(#bg1)" stroke-width="2" fill="none"/>
+					</svg>
+				</div>
+
+				<h2>The problem: AI keeps re-copying the same data</h2>
+				<p>Almost every data platform is a relay race of copies. A single event is written, then copied, then copied again, just to become usable for messaging, then analytics, then AI:</p>
+				<code class="codeblock">Producer → Kafka/Pulsar → Object Store (S3/HDFS) → Iceberg/Delta → Spark/Flink/Trino → Feature Store / Vector DB</code>
+				<p>Each hop is real cost and real complexity:</p>
+				<ul>
+					<li><strong>Multiple copies of data</strong> — the same bytes live in the streaming layer, in object storage, and again in a table format.</li>
+					<li><strong>ETL pipelines</strong> — jobs to move and reshape data between every layer, built, scheduled, monitored, and paid for.</li>
+					<li><strong>High storage cost</strong> and a large infrastructure footprint.</li>
+					<li><strong>Stale data</strong> — AI sees features minutes or hours after the event happened.</li>
+					<li><strong>Two worlds</strong> — a streaming stack and an analytics stack, operated by different teams.</li>
+				</ul>
+
+				<h2>The idea: make the streaming layer the lakehouse</h2>
+				<p>The Streaming Lakehouse collapses that relay race into a single platform on Apache Pulsar and Apache BookKeeper:</p>
+				<code class="codeblock"><span class="good">Producer → Pulsar → BookKeeper Streaming Lakehouse</span></code>
+				<p>One write. One copy. One storage engine. From that single copy you get pub-sub messaging, lakehouse-style analytical scans, SQL table access, historical replay, and native point-in-time joins — with no ETL and no duplicate storage.</p>
+
+				<h2>The key innovation: columnar pages inside BookKeeper</h2>
+				<p>BookKeeper already does something convenient: after writing incoming data to its journal (a write-ahead log), it buffers entries in a <strong>write cache</strong> before batching them to the ledger device. The Streaming Lakehouse hooks into exactly that moment.</p>
+				<p>Instead of flushing row-oriented log entries straight to the <code>EntryLog</code>, we convert the buffered data into <strong>immutable, compressed columnar pages</strong> using <strong>Apache Vortex</strong>, and write those pages to disk:</p>
+				<code class="codeblock">Message Stream → Journal → Write Cache → <span class="kw">Vortex Columnar Page Builder</span> → Ledger Storage</code>
+				<p>Each page (written in 2&ndash;4&nbsp;MB batches by default, configurable) is a self-describing analytics unit carrying columnar data, compression, statistics (min/max, null counts, cardinality), bloom filters, time ranges, and join indexes. For an <em>Employee</em> topic, each page records both a <strong>creation-time range</strong> and an <strong>employee_id range</strong> — so a query for <code>employee_id = 123</code> skips every page whose range can't contain it, reading only the few pages that could match. This turns BookKeeper from a log store into a Streaming Lakehouse storage engine, while still batching exactly as it does today.</p>
+
+				<h2>Two brokers over one storage layer</h2>
+				<h3>1. Pub-Sub Broker</h3>
+				<ul>
+					<li>Reads the pages, reconstructs entries, and delivers them as normal Pulsar consumer messages.</li>
+					<li>Existing Pulsar semantics and existing Java, Python, and Go clients keep working — no client changes.</li>
+				</ul>
+				<h3>2. DataLake Broker</h3>
+				<ul>
+					<li>Reads the columnar pages, loads page metadata, prunes irrelevant pages, and runs filters, projections, aggregations, and joins in memory.</li>
+					<li>Returns analytical and SQL results — including joined output — from the same copy of data.</li>
+				</ul>
+				<p>To keep low-latency messaging and heavy analytics from fighting each other, topics come in two flavors: a <strong>Messaging Topic</strong> (full Pulsar behavior) and a <strong>Streaming Lakehouse Topic</strong> (sequential, cumulative-ack, columnar, analytics-enabled).</p>
+
+				<h2>Where it gets interesting: native point-in-time joins</h2>
+				<p>Because BookKeeper storage is append-only and immutable, every topic <em>already</em> contains the full history of every record. That means you can answer <strong>"as of"</strong> questions natively — no Iceberg snapshots, no separate historical tables. This is exactly what AI needs for <strong>point-in-time-correct features</strong> and leakage-free training sets.</p>
+				<p>Consider an Employee topic and a Department topic:</p>
+				<code class="codeblock">Employee:  employee_id=1, name=John, dept=10 @ 10:00   then   employee_id=1, dept=20 @ 11:00
+Department: dept=10, name=Engineering @ 09:00     and    dept=20, name=Platform @ 10:30</code>
+				<p>The query:</p>
+				<code class="codeblock"><span class="kw">SELECT</span> * <span class="kw">FROM</span> Employee e <span class="kw">JOIN</span> Department d <span class="kw">ON</span> e.dept = d.dept <span class="kw">AS OF</span> '10:15'</code>
+				<p>correctly returns <strong>John → Engineering</strong> — because at 10:15 John was still in dept 10, and dept 20 ("Platform") did not yet exist. This is a <strong>temporal hash join</strong>, very similar to how MVCC databases resolve versions.</p>
+
+				<h3>Three layers make it scale</h3>
+				<p>Scanning everything would be hopeless — imagine a billion-row Employee topic joined to ten million Departments. Layered metadata means the engine reads almost nothing it doesn't need:</p>
+				<ul>
+					<li><strong>Layer 1 — Columnar Pages:</strong> the 2&ndash;4&nbsp;MB Vortex page batches holding the actual data.</li>
+					<li><strong>Layer 2 — Page Metadata:</strong> <code>page_id, min_ts, max_ts, min_emp_id, max_emp_id</code> for pruning.</li>
+					<li><strong>Layer 3 — Join / Version Index:</strong> for each key, the page, row group, and time range of every version — sorted by <code>(key, event_time)</code> so the broker binary-searches for the latest version <code>≤</code> the query timestamp.</li>
+				</ul>
+				<p>Without Layer 3, joins degrade into full scans; with it, they become fast lookups.</p>
+
+				<h3>Execution: stand on Arrow, Vortex, and DataFusion</h3>
+				<p>Rather than writing a SQL engine from scratch, the DataLake Broker turns pages into Arrow record batches and lets a vectorized engine do the work:</p>
+				<code class="codeblock">BookKeeper Page → Arrow RecordBatch → DataFusion → Hash Join → Result</code>
+				<p>Filters, projections, joins, and aggregations come almost for free, exposed through SQL over Arrow Flight, JDBC, and REST — including <code>SELECT</code>, <code>JOIN</code>, <code>GROUP BY</code>, <code>WINDOW</code>, and <code>AS OF</code>.</p>
+
+				<div class="callout">
+					<p><strong>The value proposition is simple: One Write. One Copy. One Storage Engine. Streaming + Lakehouse + Historical SQL — purpose-built to feed AI.</strong></p>
+				</div>
+
+				<h2>Where this fits</h2>
+				<p>The Streaming Lakehouse is a natural fit for ML feature stores, agent memory and RAG, real-time personalization, fraud and risk, observability, Customer-360, financial transactions, and IoT analytics — anywhere teams pay today to keep a streaming copy and an analytics copy of the same data in sync.</p>
+
+				<div class="callout" style="text-align:center;">
+					<p style="margin-bottom:18px;"><em>The Streaming Lakehouse is an actively evolving platform StreamBricks is building on Apache Pulsar &amp; BookKeeper. Want to pilot it on your workload?</em></p>
+					<a href="index.html#contact" class="btn btn-primary">Request early access →</a>
+				</div>
+
+			</div>
+		</main>
+
+		<!-- Footer -->
+		<footer class="site-footer">
+			<div class="container">
+				<div class="footer-grid">
+					<div>
+						<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+						<p>The Streaming Lakehouse for AI infrastructure — one copy of data for real-time agents, ML features, and SQL analytics, built on Apache Pulsar &amp; BookKeeper.</p>
+					</div>
+					<div class="footer-col">
+						<h5>Platform</h5>
+						<a href="streaming-lakehouse.html">Streaming Lakehouse</a>
+						<a href="index.html#platform">Capabilities</a>
+						<a href="index.html#usecases">AI Use Cases</a>
+						<a href="service.html">Pricing</a>
+					</div>
+					<div class="footer-col">
+						<h5>Company</h5>
+						<a href="blog1.html">Blog</a>
+						<a href="index.html#contact">Request access</a>
+						<a href="mailto:info@streambricks.com">info@streambricks.com</a>
+					</div>
+				</div>
+				<div class="footer-bottom">
+					<span>&copy; StreamBricks. All rights reserved.</span>
+					<span>Menlo Park, CA · USA</span>
+				</div>
+			</div>
+		</footer>
+
+		<script>
+			document.getElementById('navToggle').addEventListener('click', function () {
+				document.getElementById('navLinks').classList.toggle('open');
+			});
+		</script>
+
+	</body>
+</html>

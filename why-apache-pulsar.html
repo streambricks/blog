@@ -1,0 +1,131 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>StreamBricks — Why Apache Pulsar Scales Horizontally</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="How Apache Pulsar's segment-oriented BookKeeper architecture enables true horizontal scalability, geo-replication, streaming + queuing, and flexible retention — the foundation of the Streaming Lakehouse." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="assets/css/streambricks.css" />
+	</head>
+	<body>
+
+		<!-- Navigation -->
+		<nav class="site-nav">
+			<div class="container">
+				<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+				<div class="nav-links" id="navLinks">
+					<a href="index.html">Home</a>
+					<a href="streaming-lakehouse.html">Platform</a>
+					<a href="index.html#usecases">AI Use Cases</a>
+					<a href="blog1.html" class="active">Blog</a>
+					<a href="service.html">Pricing</a>
+				</div>
+				<div class="nav-cta">
+					<a href="index.html#contact" class="btn btn-ghost">Talk to us</a>
+					<a href="index.html#contact" class="btn btn-primary">Request early access</a>
+					<button class="nav-toggle" id="navToggle" aria-label="Menu">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+					</button>
+				</div>
+			</div>
+		</nav>
+
+		<main class="container">
+			<div class="article">
+
+				<div class="article-hero">
+					<span class="eyebrow">Engineering</span>
+					<h1>Why <span class="grad-text">Apache Pulsar</span> scales horizontally</h1>
+					<p class="dek">The segment-oriented architecture that makes Pulsar the right foundation for a Streaming Lakehouse.</p>
+				</div>
+
+				<h2>Messaging and streaming, in one platform</h2>
+				<p>Publish/subscribe messaging is asynchronous communication between services, common in serverless and microservices architectures: messages sent to a topic are delivered to all subscribers, decoupling applications and improving performance, reliability, and scalability. Stream processing handles that data continuously and in real time — and as businesses rely on timely insight, the challenge is not just volume but processing data fast enough to react instantly.</p>
+				<p>Pulsar and Kafka are both strong alternatives to traditional brokers, offering higher throughput, built-in partitioning, replication, and fault tolerance. But they differ in message modeling and capabilities — which is exactly what matters when picking the right system for a use case.</p>
+
+				<h2>Horizontally scalable by design</h2>
+				<p>Apache Pulsar achieves horizontal scalability through Apache BookKeeper's segment-oriented architecture, which distributes topic data across many bookies (BookKeeper storage nodes). This makes Pulsar fundamentally different from Kafka.</p>
+
+				<h3>Why Pulsar scales</h3>
+				<ul>
+					<li><strong>Segmented storage model</strong> — unlike Kafka, where a topic's partitions are tied to a specific broker, Pulsar splits topic data into segments distributed across multiple bookies, enabling independent scaling of storage and processing.</li>
+					<li><strong>Decoupled brokers &amp; storage</strong> — Pulsar brokers are stateless routers handling message distribution, while BookKeeper manages storage. Kafka brokers do both, which creates a bottleneck.</li>
+					<li><strong>Dynamic load distribution</strong> — new bookies can be added at any time, and Pulsar automatically redistributes topic segments across them.</li>
+					<li><strong>Parallel reads &amp; writes</strong> — multiple bookies handle different segments of a topic; Kafka restricts a partition to a single broker.</li>
+					<li><strong>Fault tolerance &amp; replication</strong> — segment-based replication ensures redundancy; if a bookie fails, Pulsar redistributes segments while maintaining availability.</li>
+				</ul>
+
+				<h3>Why Kafka can't scale the same way</h3>
+				<ul>
+					<li><strong>Topic–broker binding</strong> — a topic's partitions are bound to a single broker, so data can't be distributed dynamically across brokers.</li>
+					<li><strong>Broker bottleneck</strong> — adding brokers doesn't increase a partition's throughput; the only way to scale is adding partitions, which brings rebalancing overhead.</li>
+					<li><strong>Limited storage scalability</strong> — Kafka brokers store topic data, so capacity is bounded by a broker's disk, whereas Pulsar offloads storage to BookKeeper.</li>
+				</ul>
+
+				<div class="callout">
+					<p><strong>Conclusion:</strong> Pulsar's decoupled architecture allows true horizontal scaling — adding bookies increases both storage and throughput. Kafka's architecture is inherently limited because topics are tightly coupled to brokers. That same segment model is what lets us rebuild BookKeeper storage as a <a href="streaming-lakehouse.html">Streaming Lakehouse</a>.</p>
+				</div>
+
+				<h2>Geo-replication</h2>
+				<p>Geo-replication replicates persistently stored messages across clusters — often across data centers — for disaster recovery and distribution. Kafka offers MirrorMaker, a standalone tool the operator must install and manage. Pulsar provides <strong>built-in</strong> geo-replication, reliably and asynchronously replicating across clusters with no extra tooling.</p>
+
+				<h2>Streaming and queuing</h2>
+				<p>Message consumption falls into two patterns, and Pulsar supports both natively.</p>
+				<h3>Streaming</h3>
+				<p>Used where messages must be consumed in the order they were written. Both Kafka and Pulsar guarantee ordering in their streaming models — common in multi-stage data pipelines where raw input is aggregated, enriched, and written onward.</p>
+				<h3>Queuing</h3>
+				<p>Queuing processes messages without a strict order, in parallel across workers, with individual acknowledgement. Kafka only supports exclusive consumers — each partition is processed by one consumer in a group, so parallelism scales only by repartitioning. Pulsar supports shared consumers: scale throughput by adding consumers without repartitioning, and acknowledge individual messages. This makes Pulsar far more flexible for parallel consumption.</p>
+
+				<h2>Storage, retention, and committing</h2>
+				<p>Kafka uses time-based retention — messages are deleted after a configured period whether or not they were consumed. Pulsar retains messages until acknowledged by all subscribers, with optional explicit expiry or extended retention per topic.</p>
+				<p>For acknowledgement, Kafka uses high-watermark commits: a consumer can only say "I've processed up to here", forcing extra bookkeeping logic. Pulsar natively supports <strong>individual message acknowledgement</strong> and keeps unacknowledged messages until they're explicitly committed — with configurable ack timeouts for automatic redelivery.</p>
+
+				<div class="callout" style="text-align:center;">
+					<p style="margin-bottom:18px;"><em>This architecture is the foundation of the StreamBricks Streaming Lakehouse — where the same Pulsar topics also serve AI features and SQL.</em></p>
+					<a href="streaming-lakehouse.html" class="btn btn-primary">See the Streaming Lakehouse →</a>
+				</div>
+
+			</div>
+		</main>
+
+		<!-- Footer -->
+		<footer class="site-footer">
+			<div class="container">
+				<div class="footer-grid">
+					<div>
+						<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+						<p>The Streaming Lakehouse for AI infrastructure — one copy of data for real-time agents, ML features, and SQL analytics, built on Apache Pulsar &amp; BookKeeper.</p>
+					</div>
+					<div class="footer-col">
+						<h5>Platform</h5>
+						<a href="streaming-lakehouse.html">Streaming Lakehouse</a>
+						<a href="index.html#platform">Capabilities</a>
+						<a href="index.html#usecases">AI Use Cases</a>
+						<a href="service.html">Pricing</a>
+					</div>
+					<div class="footer-col">
+						<h5>Company</h5>
+						<a href="blog1.html">Blog</a>
+						<a href="index.html#contact">Request access</a>
+						<a href="mailto:info@streambricks.com">info@streambricks.com</a>
+					</div>
+				</div>
+				<div class="footer-bottom">
+					<span>&copy; StreamBricks. All rights reserved.</span>
+					<span>Menlo Park, CA · USA</span>
+				</div>
+			</div>
+		</footer>
+
+		<script>
+			document.getElementById('navToggle').addEventListener('click', function () {
+				document.getElementById('navLinks').classList.toggle('open');
+			});
+		</script>
+
+	</body>
+</html>

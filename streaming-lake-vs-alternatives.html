@@ -1,0 +1,153 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>StreamBricks — How the Streaming Lakehouse Compares: Fluss, Hudi, RisingWave &amp; Databricks</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="An honest comparison of the StreamBricks Streaming Lakehouse against Kafka+Iceberg, Apache Fluss, Apache Hudi, RisingWave, Databricks, and Pinot/Druid — and the one capability none of them deliver." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="assets/css/streambricks.css" />
+	</head>
+	<body>
+
+		<!-- Navigation -->
+		<nav class="site-nav">
+			<div class="container">
+				<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+				<div class="nav-links" id="navLinks">
+					<a href="index.html">Home</a>
+					<a href="streaming-lakehouse.html">Platform</a>
+					<a href="index.html#usecases">AI Use Cases</a>
+					<a href="blog1.html" class="active">Blog</a>
+					<a href="service.html">Pricing</a>
+				</div>
+				<div class="nav-cta">
+					<a href="index.html#contact" class="btn btn-ghost">Talk to us</a>
+					<a href="index.html#contact" class="btn btn-primary">Request early access</a>
+					<button class="nav-toggle" id="navToggle" aria-label="Menu">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+					</button>
+				</div>
+			</div>
+		</nav>
+
+		<main class="container">
+			<div class="article">
+
+				<div class="article-hero">
+					<span class="eyebrow">Landscape</span>
+					<h1>How the Streaming Lakehouse <span class="grad-text">compares</span></h1>
+					<p class="dek">Kafka + Iceberg, Apache Fluss, Apache Hudi, RisingWave, Databricks — and the one capability none of them fully deliver.</p>
+				</div>
+
+				<h2>The fundamental split: table-first vs log-first</h2>
+				<p>Almost every "streaming + analytics" system on the market today started as a <strong>table</strong> and bolted streaming on afterwards — Hudi, Iceberg, Delta, and Fluss all think table-first. StreamBricks starts from the opposite end: it starts as a <strong>log</strong> (a Pulsar topic on BookKeeper) and evolves that log into a lakehouse.</p>
+				<code class="codeblock">Pulsar Topic → BookKeeper Ledger → Columnar Pages → Temporal Table → SQL</code>
+				<p>That ordering matters. Because we begin from Pulsar's log, we inherit topics, consumer groups, replay, retention, multi-tenancy, tiered storage, and geo-replication <em>for free</em> — and then add the lakehouse on the same physical bytes. The result is closest to an <strong>event-sourced lakehouse</strong>: every stream is also a historical table, and every table is also a stream.</p>
+
+				<h2>The capability matrix</h2>
+				<div class="cmp-table-wrap">
+					<table class="cmp-table">
+						<thead>
+							<tr>
+								<th>Capability</th>
+								<th class="own">StreamBricks</th>
+								<th>Kafka + Iceberg<small>+ Spark</small></th>
+								<th>Apache Fluss</th>
+								<th>Apache Hudi</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr><th>Pub-sub messaging API</th><td class="own"><span class="yes">●</span><small>Native Pulsar</small></td><td><span class="yes">●</span><small>Kafka</small></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+							<tr><th>Streaming storage</th><td class="own"><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="partial">◐</span><small>batch-oriented</small></td></tr>
+							<tr><th>Single physical copy</th><td class="own"><span class="yes">●</span></td><td><span class="no">—</span><small>multiple copies</small></td><td><span class="yes">●</span></td><td><span class="partial">◐</span><small>multiple views</small></td></tr>
+							<tr><th>No ETL between stream &amp; lake</th><td class="own"><span class="yes">●</span></td><td><span class="no">—</span></td><td><span class="yes">●</span></td><td><span class="no">—</span></td></tr>
+							<tr><th>Columnar storage</th><td class="own"><span class="yes">●</span><small>Vortex</small></td><td><span class="yes">●</span><small>Parquet</small></td><td><span class="partial">◐</span><small>log / table</small></td><td><span class="yes">●</span><small>Parquet</small></td></tr>
+							<tr><th>Historical versions</th><td class="own"><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td></tr>
+							<tr><th>Point-in-time query (AS OF)</th><td class="own"><span class="yes">●</span></td><td><span class="yes">●</span><small>time travel</small></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td></tr>
+							<tr><th>Native point-in-time joins</th><td class="own"><span class="partial">◐</span><small>on roadmap</small></td><td><span class="no">—</span><small>external engine</small></td><td><span class="no">—</span><small>limited</small></td><td><span class="no">—</span><small>external engine</small></td></tr>
+							<tr><th>Native SQL engine</th><td class="own"><span class="partial">◐</span><small>DataFusion, roadmap</small></td><td><span class="no">—</span><small>Spark / Trino</small></td><td><span class="no">—</span><small>uses Flink</small></td><td><span class="no">—</span><small>Spark / Trino</small></td></tr>
+							<tr><th>Message replay &amp; consumer groups</th><td class="own"><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+							<tr><th>Data lake / analytical scans</th><td class="own"><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td></tr>
+						</tbody>
+					</table>
+				</div>
+				<p style="text-align:center;color:var(--muted-2);font-size:13.5px;margin-top:14px;">● available &nbsp; ◐ on roadmap / partial &nbsp; — not supported</p>
+
+				<h2>Kafka + Iceberg + Spark</h2>
+				<p>The default modern stack, and the one StreamBricks most directly replaces. It does everything — but by maintaining <strong>separate copies</strong> at every layer: Kafka for the stream, object storage for the raw data, Iceberg for the table, Spark/Trino for compute. Every copy is another pipeline, another bill, and another source of staleness. The single-copy architecture is precisely the copy StreamBricks removes.</p>
+
+				<h2>Apache Hudi</h2>
+				<p>Hudi is fundamentally a <strong>data-lake storage</strong> system, not a streaming system. It solves upserts, CDC, historical snapshots, and incremental queries on Parquet in S3/HDFS — but there is no producer/consumer pub-sub layer. You don't <code>subscribe</code> to a Hudi table. StreamBricks wants pub-sub, lakehouse, and temporal query from the <em>same</em> storage; Hudi wants object store + table format.</p>
+
+				<h2>Apache Fluss</h2>
+				<p>Fluss is the most conceptually similar project — it explicitly merges Kafka-style streaming with a lakehouse into one system, with streaming tables you can query while data is still arriving. We share the same north star: one copy, one storage, streaming + analytics.</p>
+				<p>The difference is the starting point. Fluss still thinks in terms of <strong>table storage</strong> and leans on Flink for SQL. StreamBricks thinks in terms of <strong>message storage</strong> with full Pulsar semantics — so it inherits the entire Pulsar ecosystem (millions of topics, multi-tenancy, tiered storage, functions, connectors, transactions, geo-replication) rather than rebuilding it. Fluss does not have that pub-sub ecosystem.</p>
+
+				<h2>RisingWave</h2>
+				<p>RisingWave is the closest conceptual match for the <em>query</em> side — streaming SQL with materialized views, joins, and historical state. But it is a streaming database, not a pub-sub platform: you don't get topics, consumer groups, and replay as first-class primitives. StreamBricks keeps the messaging substrate and adds the analytics on top.</p>
+
+				<h2>Databricks</h2>
+				<p>Interestingly, the closest <em>commercial</em> competitor isn't Hudi or Fluss — it's Databricks, whose Kafka → Delta → Photon → SQL vision also targets "streaming + tables + analytics." The distinction is the same one that runs through this whole comparison: Databricks still maintains <strong>separate layers and copies</strong>. StreamBricks collapses them into one.</p>
+
+				<h2>Pinot / Druid</h2>
+				<p>Pinot and Druid share the philosophy of columnar storage with min/max ranges and bloom filters for low-latency analytics, ingesting from Kafka/Pulsar. But they are analytics <strong>sinks</strong> — they don't offer full pub-sub, replay, or consumer groups. StreamBricks is both the stream and the analytics store.</p>
+
+				<h2>The one thing none of them deliver</h2>
+				<div class="callout">
+					<p>Native <strong>temporal joins over streaming history</strong>, backed by a single physical copy:</p>
+				</div>
+				<code class="codeblock"><span class="kw">SELECT</span> * <span class="kw">FROM</span> Orders o <span class="kw">JOIN</span> Customer c <span class="kw">ON</span> o.customer_id = c.id <span class="kw">AS OF</span> o.event_time</code>
+				<p>Because BookKeeper storage is append-only and retains full history, StreamBricks can answer "what was true at the moment of this event" without maintaining Iceberg snapshots or separate historical tables. That is the single most valuable capability for AI — leakage-free, point-in-time-correct features and training sets — and it is exactly where the log-first design pays off. Neither Hudi nor Fluss fully delivers it today.</p>
+
+				<h2>An honest take</h2>
+				<p>This is a hard, multi-year systems effort, and several pieces — native joins, the full SQL engine, distributed execution — are on the roadmap rather than shipping today (the matrix marks them honestly as ◐). For a generic data warehouse, Iceberg + Spark will likely remain simpler. But for an organization already heavily invested in event streams, the ability to run analytics, historical queries, and temporal joins <em>without</em> copying data into a separate lake is genuinely compelling. The differentiator isn't "another lakehouse" — it's that <strong>every table is also a stream, every stream is also a historical table, all on one copy in BookKeeper.</strong></p>
+
+				<div class="callout" style="text-align:center;">
+					<p style="margin-bottom:18px;"><em>Want to see how this maps to your stack? We'll walk through your current pipeline and where the copies disappear.</em></p>
+					<a href="index.html#contact" class="btn btn-primary">Request early access →</a>
+				</div>
+
+			</div>
+		</main>
+
+		<!-- Footer -->
+		<footer class="site-footer">
+			<div class="container">
+				<div class="footer-grid">
+					<div>
+						<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+						<p>The Streaming Lakehouse for AI infrastructure — one copy of data for real-time agents, ML features, and SQL analytics, built on Apache Pulsar &amp; BookKeeper.</p>
+					</div>
+					<div class="footer-col">
+						<h5>Platform</h5>
+						<a href="streaming-lakehouse.html">Streaming Lakehouse</a>
+						<a href="index.html#platform">Capabilities</a>
+						<a href="index.html#usecases">AI Use Cases</a>
+						<a href="service.html">Pricing</a>
+					</div>
+					<div class="footer-col">
+						<h5>Company</h5>
+						<a href="blog1.html">Blog</a>
+						<a href="index.html#contact">Request access</a>
+						<a href="mailto:info@streambricks.com">info@streambricks.com</a>
+					</div>
+				</div>
+				<div class="footer-bottom">
+					<span>&copy; StreamBricks. All rights reserved.</span>
+					<span>Menlo Park, CA · USA</span>
+				</div>
+			</div>
+		</footer>
+
+		<script>
+			document.getElementById('navToggle').addEventListener('click', function () {
+				document.getElementById('navLinks').classList.toggle('open');
+			});
+		</script>
+
+	</body>
+</html>
