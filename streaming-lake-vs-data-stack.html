@@ -43,7 +43,7 @@
 					<p class="dek">Why not Kafka, Pulsar, Iceberg, Delta, Hudi, Fluss, Databricks, Snowflake, Druid, Pinot, ClickHouse, RisingWave, or Materialize? A technology-by-technology answer — and why the real comparison isn't any one of them, it's the whole pipeline.</p>
 				</div>
 
-				<h2>Don't position against one technology — position against the pipeline</h2>
+				<h2>The real comparison isn't one technology — it's the whole pipeline</h2>
 				<p>Every tool below is excellent at the job it was built for. The problem is that delivering "streaming <em>and</em> analytics <em>and</em> history" today means <strong>stitching several of them together</strong> — and every hop adds a copy of the data, a pipeline to move it, and a lag before it's queryable.</p>
 				<p>The current reality:</p>
 				<code class="codeblock">Producer → Kafka/Pulsar → Flink → Iceberg → S3 → Spark/Trino</code>
@@ -143,9 +143,9 @@
 					</tbody>
 				</table>
 
-				<h3>Apache Fluss <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— the closest competitor</span></h3>
-				<p>This is the hardest comparison and our closest philosophical match: Fluss explicitly unifies streaming and a lakehouse into one system with streaming tables you can query as data arrives. We share the same north star — one copy, streaming + analytics.</p>
-				<p>The difference is the <strong>starting point</strong>. Fluss thinks table‑first and leans on Flink for SQL; Streaming Lake thinks message‑first on Pulsar, so it inherits a mature pub‑sub ecosystem rather than rebuilding it.</p>
+				<h3>Apache Fluss <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— the closest in philosophy</span></h3>
+				<p>Fluss is the closest match in philosophy: it explicitly unifies streaming and a lakehouse into one system, with streaming tables you can query as data arrives. Both pursue the same goal — one copy of data serving streaming and analytics.</p>
+				<p>The difference is the <strong>starting point</strong>. Fluss is table‑first and leans on Flink for SQL; Streaming Lake is message‑first on Pulsar, so it inherits a mature pub‑sub ecosystem rather than rebuilding it.</p>
 				<table class="cmp-table mini">
 					<tbody>
 						<tr><th>Solves well</th><td>Streaming tables, unified stream + batch, tight Flink integration.</td></tr>
@@ -154,7 +154,7 @@
 					</tbody>
 				</table>
 
-				<h3>Databricks <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— what investors ask about most</span></h3>
+				<h3>Databricks <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— the closest commercial vision</span></h3>
 				<p>The closest commercial vision: Kafka → Delta → Photon → SQL solves nearly everything analytically. But it is still multiple layers — Kafka, Delta, and object storage — with the data duplicated across them.</p>
 				<table class="cmp-table mini">
 					<tbody>
@@ -184,21 +184,56 @@
 					</tbody>
 				</table>
 
-				<h3>ClickHouse <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— a stronger competitor than it looks</span></h3>
-				<p>ClickHouse is one of the fastest analytical engines ever built, and the comparison is more about <strong>identity</strong> than features. The difference is philosophical:</p>
-				<code class="codeblock">ClickHouse:      OLAP database  →  later adds streaming
-Streaming Lake:  distributed event log  →  evolves into a lakehouse</code>
-				<p>The storage ideas are strikingly similar — ClickHouse's <strong>MergeTree</strong> (parts, columnar data, primary index, bloom filters, compression) maps almost one‑to‑one onto Streaming Lake's <strong>columnar pages + metadata + temporal index</strong> on a BookKeeper ledger. The decisive difference is that <strong>BookKeeper remains the source of truth</strong>: ClickHouse "streaming" is still <code>INSERT → table</code> — there are no subscriptions, consumer groups, replay cursors, acknowledgements, or message‑ordering APIs. And because the log is append‑only, every historical version <em>already exists</em> in BookKeeper, so point‑in‑time joins read history that is simply there rather than history you had to materialize into tables first.</p>
+				<h3>ClickHouse <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— OLAP‑first vs log‑first</span></h3>
+				<p>ClickHouse is one of the most important comparisons here: it overlaps directly with the analytical half of Streaming Lake, and it is one of the fastest analytical engines ever built. The difference is less about individual features and more <strong>philosophical</strong> — it comes down to where each system <em>starts</em>:</p>
+				<code class="codeblock">ClickHouse:      starts as an OLAP database         →  later adds streaming
+Streaming Lake:  starts as a distributed event log  →  evolves into a lakehouse</code>
+
+				<div class="cmp-table-wrap">
+					<table class="cmp-table">
+						<thead>
+							<tr><th>Capability</th><th class="own">Streaming Lake</th><th>ClickHouse</th></tr>
+						</thead>
+						<tbody>
+							<tr><th>Pub‑sub messaging</th><td class="own"><span class="yes">●</span><small>native</small></td><td><span class="no">—</span><small>no</small></td></tr>
+							<tr><th>Event / replay log</th><td class="own"><span class="yes">●</span><small>native</small></td><td><span class="no">—</span><small>no</small></td></tr>
+							<tr><th>Durable streaming storage</th><td class="own"><span class="yes">●</span><small>BookKeeper</small></td><td><span class="partial">◐</span><small>MergeTree tables</small></td></tr>
+							<tr><th>SQL analytics</th><td class="own"><span class="partial">◐</span><small>roadmap</small></td><td><span class="yes">●</span><small>excellent</small></td></tr>
+							<tr><th>Point‑in‑time query</th><td class="own"><span class="yes">●</span><small>native</small></td><td><span class="yes">●</span><small>supported</small></td></tr>
+							<tr><th>Point‑in‑time join</th><td class="own"><span class="partial">◐</span><small>roadmap</small></td><td><span class="partial">◐</span><small>possible, not core</small></td></tr>
+							<tr><th>Historical replay</th><td class="own"><span class="yes">●</span><small>native</small></td><td><span class="no">—</span><small>limited</small></td></tr>
+							<tr><th>Consumer groups</th><td class="own"><span class="yes">●</span></td><td><span class="no">—</span></td></tr>
+							<tr><th>Streaming ingestion</th><td class="own"><span class="yes">●</span><small>native</small></td><td><span class="partial">◐</span><small>Kafka/Pulsar engine</small></td></tr>
+							<tr><th>Single copy / source of truth</th><td class="own"><span class="yes">●</span></td><td><span class="partial">◐</span><small>depends on ingestion</small></td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<p><strong>Architecture.</strong> A typical ClickHouse deployment moves data <em>into</em> ClickHouse before it can be queried — notice the data movement at each hop:</p>
+				<code class="codeblock">Producer → Kafka → Kafka Engine → Materialized View → MergeTree Table → SQL
+      (or)  Producer → Pulsar → Connector → ClickHouse</code>
+				<p>Streaming Lake keeps one store and serves both access patterns from it, with no ingestion pipeline into a second database:</p>
+				<code class="codeblock">Producer → Pulsar → BookKeeper   →   Pub‑Sub Broker   &amp;   DataLake Broker</code>
+
+				<p><strong>Storage.</strong> The two storage designs are strikingly similar. ClickHouse's <strong>MergeTree</strong> stores data in parts with columnar layout, a primary index, bloom filters, and compression. Streaming Lake stores a <strong>BookKeeper ledger → columnar pages → page metadata → temporal index</strong>. The decisive difference is the source of truth: in Streaming Lake the <strong>log itself is the source of truth</strong>; in ClickHouse the source of truth lives upstream (usually Kafka), and ClickHouse holds a derived copy.</p>
+
+				<p><strong>Streaming.</strong> ClickHouse <em>supports</em> streaming, but internally it is still <code>INSERT → table</code>. It is not fundamentally a messaging system — there are no subscriptions, consumer groups, replay cursors, acknowledgements, or message‑ordering APIs. Streaming Lake has all of these natively, because Pulsar already does.</p>
+
+				<p><strong>Historical replay.</strong> In ClickHouse, <code>SELECT * FROM orders</code> returns rows. Streaming Lake can additionally <em>replay</em> — "deliver every message from 3&nbsp;PM yesterday," or "resume from message id X." Replaying a stream is a different capability from querying a table, and it is the foundation for reprocessing, recovery, and rebuilding downstream state.</p>
+
+				<p><strong>Point‑in‑time joins.</strong> ClickHouse can certainly run <code>Orders JOIN Customer</code> — but the customer history must already exist as rows in a table that was maintained for it. Because BookKeeper is append‑only, every historical version is <em>already present</em> in the log, so an "as‑of" join reads history that is simply there rather than history that had to be pre‑materialized.</p>
+
+				<p><strong>ETL &amp; operational complexity.</strong> ClickHouse usually sits at the end of a pipeline (<code>Kafka → ClickHouse</code> or <code>S3 → ClickHouse</code>), and a full event‑to‑analytics stack often runs five systems: <code>Kafka → Flink → Iceberg → Spark → ClickHouse</code>. Streaming Lake collapses that to <code>Pulsar → Streaming Lake</code> — producer to log to SQL, with no intermediate database to operate.</p>
+
+				<p><strong>Performance.</strong> This is where ClickHouse is very hard to beat — nearly a decade of vectorized execution, SIMD, compression, caches, a mature query optimizer, MergeTree, and distributed execution. The distinction here is <em>architectural, not a performance claim</em>: ClickHouse is likely to remain faster for heavy analytical SQL, while Streaming Lake's difference is unifying messaging, history, and analytics on a single source‑of‑truth log.</p>
+
 				<table class="cmp-table mini">
 					<tbody>
-						<tr><th>Solves well</th><td>Best‑in‑class real‑time OLAP — vectorized/SIMD execution, compression, mature optimizer, distributed joins, BI &amp; dashboards.</td></tr>
-						<tr><th>The gap</th><td>Not a messaging system or a source of truth — no pub‑sub, consumer groups, replay, or event log; data is ingested (Kafka/Pulsar engine) into MergeTree, i.e. moved into another store.</td></tr>
-						<tr><th class="own">Streaming Lake</th><td class="own">The append‑only log <em>is</em> messaging, history, and analytical storage — no ingestion into a separate database.</td></tr>
+						<tr><th>Where ClickHouse stays ahead</th><td>Dashboards, BI, complex aggregations, a mature optimizer, distributed joins — best‑in‑class raw analytical speed.</td></tr>
+						<tr><th>Where Streaming Lake differs</th><td>One append‑only log is the messaging system, the source of truth, the history, and the analytical store — no ingestion into a separate database.</td></tr>
+						<tr><th class="own">In one line</th><td class="own">Event log = table = historical dataset = replay log — an identity no mainstream OLAP database fully adopts.</td></tr>
 					</tbody>
 				</table>
-				<div class="callout">
-					<p><strong>Positioning:</strong> don't pitch "faster than ClickHouse" — a decade of vectorized‑SQL optimization is very hard to out‑run, and ClickHouse will stay better for dashboards, BI, complex aggregations, and distributed joins. Compete on <strong>architecture</strong>: messaging + history + analytics on one source‑of‑truth log, with native replay and no ETL — i.e. "we eliminate the <code>Kafka → Flink → Iceberg → Spark → ClickHouse</code> pipeline for event‑centric workloads," not "we replace ClickHouse."</p>
-				</div>
 
 				<h3>RisingWave</h3>
 				<p>Philosophically very close on the <em>query</em> side — streaming SQL, materialized views, joins. But it is state‑heavy and SQL‑focused rather than pub‑sub‑focused, and it consumes Kafka as its source rather than being the source.</p>
@@ -230,8 +265,8 @@ Streaming Lake:  distributed event log  →  evolves into a lakehouse</code>
 					</tbody>
 				</table>
 
-				<h2>The strongest answer</h2>
-				<p>The temptation is to argue "you don't need a second copy." But storage is cheap, and "save a copy" is a weak pitch on its own. The real value is everything that the <em>second copy and its pipeline</em> drag along with them:</p>
+				<h2>What a single log actually changes</h2>
+				<p>It's tempting to reduce this to "one less copy of the data." But storage is cheap — the real difference is everything the <em>second copy and its pipeline</em> drag along with them:</p>
 				<ul>
 					<li><strong>Eliminate ETL pipelines</strong> — no Connect / Flink / Spark job to move stream → lake.</li>
 					<li><strong>Reduce operational complexity</strong> — one system to run, secure, and scale instead of three.</li>
