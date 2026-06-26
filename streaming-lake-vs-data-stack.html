@@ -1,0 +1,294 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>StreamBricks — Streaming Lake vs. the Modern Data Stack: Kafka, Iceberg, Fluss, Databricks &amp; more</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="Why not Kafka+Iceberg, Pulsar+Iceberg, Hudi, Iceberg, Delta, Fluss, Databricks, Snowflake, Druid, Pinot, ClickHouse, RisingWave, or Materialize? A technology-by-technology comparison — and why the real comparison is against the entire pipeline." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="assets/css/streambricks.css" />
+	</head>
+	<body>
+
+		<!-- Navigation -->
+		<nav class="site-nav">
+			<div class="container">
+				<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+				<div class="nav-links" id="navLinks">
+					<a href="index.html">Home</a>
+					<a href="streaming-lakehouse.html">Platform</a>
+					<a href="index.html#usecases">AI Use Cases</a>
+					<a href="blog1.html" class="active">Blog</a>
+					<a href="service.html">Pricing</a>
+				</div>
+				<div class="nav-cta">
+					<a href="index.html#contact" class="btn btn-ghost">Talk to us</a>
+					<a href="index.html#contact" class="btn btn-primary">Request early access</a>
+					<button class="nav-toggle" id="navToggle" aria-label="Menu">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+					</button>
+				</div>
+			</div>
+		</nav>
+
+		<main class="container">
+			<div class="article">
+
+				<div class="article-hero">
+					<span class="eyebrow">Landscape</span>
+					<h1>Streaming Lake vs. the <span class="grad-text">modern data stack</span></h1>
+					<p class="dek">Why not Kafka, Pulsar, Iceberg, Delta, Hudi, Fluss, Databricks, Snowflake, Druid, Pinot, ClickHouse, RisingWave, or Materialize? A technology-by-technology answer — and why the real comparison isn't any one of them, it's the whole pipeline.</p>
+				</div>
+
+				<h2>Don't position against one technology — position against the pipeline</h2>
+				<p>Every tool below is excellent at the job it was built for. The problem is that delivering "streaming <em>and</em> analytics <em>and</em> history" today means <strong>stitching several of them together</strong> — and every hop adds a copy of the data, a pipeline to move it, and a lag before it's queryable.</p>
+				<p>The current reality:</p>
+				<code class="codeblock">Producer → Kafka/Pulsar → Flink → Iceberg → S3 → Spark/Trino</code>
+				<p>The Streaming Lake vision collapses that into one system, where the <strong>same append-only log</strong> is the stream, the table, and the history:</p>
+				<code class="codeblock">Producer → Pulsar → <span class="kw">Streaming Lake</span>      (Topic = Table · Stream = Historical Dataset · Ledger = Lakehouse Storage)</code>
+
+				<h2>The global comparison</h2>
+				<p>Across the five capabilities that matter for a streaming‑native lakehouse, only Streaming Lake (and, partially, Fluss) cover most of them in <em>one</em> system. Everything else covers a subset and relies on another system for the rest.</p>
+				<div class="cmp-table-wrap">
+					<table class="cmp-table">
+						<thead>
+							<tr>
+								<th>Technology / stack</th>
+								<th>Pub‑sub<small>groups · replay</small></th>
+								<th>Single copy<small>source of truth</small></th>
+								<th>No stream→lake ETL</th>
+								<th>Analytics on the same copy</th>
+								<th>Temporal (AS&nbsp;OF) joins</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr class="own-row">
+								<th class="own">Streaming Lake</th>
+								<td class="own"><span class="yes">●</span><small>Pulsar</small></td>
+								<td class="own"><span class="yes">●</span></td>
+								<td class="own"><span class="yes">●</span></td>
+								<td class="own"><span class="yes">●</span><small>page prune</small></td>
+								<td class="own"><span class="partial">◐</span><small>roadmap</small></td>
+							</tr>
+							<tr><th>Kafka + Iceberg</th><td><span class="yes">●</span><small>Kafka</small></td><td><span class="no">—</span><small>2 copies</small></td><td><span class="no">—</span><small>connector</small></td><td><span class="no">—</span><small>on the copy</small></td><td><span class="no">—</span></td></tr>
+							<tr><th>Pulsar + Iceberg</th><td><span class="yes">●</span><small>Pulsar</small></td><td><span class="no">—</span><small>BK + S3</small></td><td><span class="no">—</span><small>sink</small></td><td><span class="no">—</span><small>on the copy</small></td><td><span class="no">—</span></td></tr>
+							<tr><th>Apache Hudi</th><td><span class="no">—</span></td><td><span class="no">—</span><small>needs Kafka</small></td><td><span class="no">—</span><small>Spark/Flink</small></td><td><span class="yes">●</span><small>on lake</small></td><td><span class="no">—</span></td></tr>
+							<tr><th>Apache Iceberg</th><td><span class="no">—</span></td><td><span class="no">—</span><small>format only</small></td><td><span class="no">—</span><small>writers</small></td><td><span class="yes">●</span><small>via engine</small></td><td><span class="partial">◐</span><small>time travel</small></td></tr>
+							<tr><th>Delta Lake</th><td><span class="no">—</span></td><td><span class="no">—</span><small>format only</small></td><td><span class="no">—</span></td><td><span class="yes">●</span><small>via engine</small></td><td><span class="partial">◐</span><small>time travel</small></td></tr>
+							<tr><th>Apache Fluss</th><td><span class="partial">◐</span><small>no Pulsar eco</small></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="yes">●</span></td><td><span class="partial">◐</span><small>via Flink</small></td></tr>
+							<tr><th>Databricks</th><td><span class="no">—</span><small>needs Kafka</small></td><td><span class="no">—</span><small>Kafka+Delta+S3</small></td><td><span class="no">—</span><small>pipeline</small></td><td><span class="yes">●</span><small>Photon</small></td><td><span class="partial">◐</span><small>time travel</small></td></tr>
+							<tr><th>Snowflake</th><td><span class="no">—</span><small>needs Kafka</small></td><td><span class="no">—</span></td><td><span class="no">—</span><small>ingest</small></td><td><span class="yes">●</span><small>warehouse</small></td><td><span class="partial">◐</span><small>time travel</small></td></tr>
+							<tr><th>Druid / Pinot</th><td><span class="no">—</span><small>sink</small></td><td><span class="no">—</span><small>Kafka → OLAP</small></td><td><span class="partial">◐</span><small>native ingest</small></td><td><span class="yes">●</span><small>low latency</small></td><td><span class="no">—</span></td></tr>
+							<tr><th>ClickHouse</th><td><span class="no">—</span><small>no event log</small></td><td><span class="partial">◐</span><small>depends on ingest</small></td><td><span class="partial">◐</span><small>Kafka engine</small></td><td><span class="yes">●</span><small>best‑in‑class</small></td><td><span class="partial">◐</span><small>not core</small></td></tr>
+							<tr><th>RisingWave</th><td><span class="partial">◐</span><small>streaming SQL</small></td><td><span class="partial">◐</span><small>extra state</small></td><td><span class="partial">◐</span><small>SQL source</small></td><td><span class="yes">●</span><small>mat. views</small></td><td><span class="partial">◐</span></td></tr>
+							<tr><th>Materialize</th><td><span class="no">—</span><small>needs Kafka</small></td><td><span class="no">—</span><small>extra state</small></td><td><span class="partial">◐</span><small>SQL source</small></td><td><span class="yes">●</span><small>mat. views</small></td><td><span class="partial">◐</span></td></tr>
+							<tr><th>Event sourcing<small>Kafka + store + Iceberg</small></th><td><span class="yes">●</span><small>Kafka</small></td><td><span class="no">—</span><small>3 copies</small></td><td><span class="no">—</span></td><td><span class="partial">◐</span><small>via Iceberg</small></td><td><span class="no">—</span></td></tr>
+						</tbody>
+					</table>
+				</div>
+				<p style="text-align:center;color:var(--muted-2);font-size:13.5px;margin-top:14px;">● available &nbsp; ◐ partial / on roadmap &nbsp; — not supported. Each engine is strong in its niche; the matrix shows what a <em>single</em> system delivers, not quality.</p>
+
+				<h2>Technology by technology</h2>
+
+				<h3>Kafka + Iceberg</h3>
+				<p>The industry‑standard stack: mature, huge ecosystem. But it keeps the data twice — a Kafka copy <em>and</em> an Iceberg copy — bridged by an ETL job (Kafka Connect / Flink / Spark), so the lake is always seconds‑to‑minutes behind the stream, and historical joins need yet another engine.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Mature, industry‑standard streaming + a query‑able table format.</td></tr>
+						<tr><th>The gap</th><td>Double storage (Kafka + Iceberg), required ETL to move data, freshness lag, separate engine for historical joins.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">One write, one storage copy, one metadata catalog — no stream‑to‑lake replication.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Pulsar + Iceberg</h3>
+				<p>The same shape with Pulsar in front: a sink connector copies topics into Iceberg, so BookKeeper <em>and</em> S3 hold the same data.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Pulsar's streaming semantics plus an Iceberg analytical table.</td></tr>
+						<tr><th>The gap</th><td>Two storage systems (BookKeeper + S3) holding the same bytes, plus the sink pipeline between them.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">BookKeeper itself becomes both streaming storage <em>and</em> lake storage.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Apache Hudi</h3>
+				<p>Hudi is excellent at CDC, upserts, and incremental processing on the lake — but it is not a messaging system. There are no consumer groups, subscriptions, replay APIs, or pub‑sub, so you still need Kafka or Pulsar in front of it.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>CDC, upserts, incremental queries on Parquet in object storage.</td></tr>
+						<tr><th>The gap</th><td>No pub‑sub — no consumer groups, subscriptions, or replay. You still run a separate streaming system.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">No separate streaming system — the log <em>is</em> the messaging layer.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Apache Iceberg</h3>
+				<p>Iceberg is a superb table format — snapshots, schema evolution, hidden partitioning. But a format is not storage and not execution: it still needs object storage (S3/HDFS/ADLS) underneath and an engine (Spark/Flink/Trino) on top, and a streaming system in front to feed it.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Open table format: snapshots, schema evolution, time travel.</td></tr>
+						<tr><th>The gap</th><td>Not storage and not execution — needs object store + an external engine + a stream to populate it.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">Storage and execution metadata are integrated into the same engine.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Delta Lake</h3>
+				<p>Same answer as Iceberg. Delta solves lakehouse tables, not pub‑sub — you still need Kafka for streaming, Spark for compute, and object storage underneath.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>ACID lakehouse tables with time travel.</td></tr>
+						<tr><th>The gap</th><td>No pub‑sub; relies on Kafka + Spark + object storage around it.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">Messaging, table, and storage in one log — no surrounding stack to assemble.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Apache Fluss <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— the closest competitor</span></h3>
+				<p>This is the hardest comparison and our closest philosophical match: Fluss explicitly unifies streaming and a lakehouse into one system with streaming tables you can query as data arrives. We share the same north star — one copy, streaming + analytics.</p>
+				<p>The difference is the <strong>starting point</strong>. Fluss thinks table‑first and leans on Flink for SQL; Streaming Lake thinks message‑first on Pulsar, so it inherits a mature pub‑sub ecosystem rather than rebuilding it.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Streaming tables, unified stream + batch, tight Flink integration.</td></tr>
+						<tr><th>The gap</th><td>No mature pub‑sub ecosystem — no Pulsar clients, multi‑tenancy, geo‑replication, millions of topics, functions, or connectors.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">Builds on the proven Pulsar ecosystem and adds the lakehouse on the same bytes.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Databricks <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— what investors ask about most</span></h3>
+				<p>The closest commercial vision: Kafka → Delta → Photon → SQL solves nearly everything analytically. But it is still multiple layers — Kafka, Delta, and object storage — with the data duplicated across them.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Nearly everything analytical — Delta, Photon, SQL, ML.</td></tr>
+						<tr><th>The gap</th><td>Still multiple layers (Kafka + Delta + object store) and duplicate data.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">Removes the Kafka → Delta pipeline entirely.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Snowflake</h3>
+				<p>Snowflake is an exceptional data warehouse — but not a streaming platform. Getting events in still requires Kafka/Pulsar + an ingestion pipeline.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Cloud data warehouse: elastic SQL analytics.</td></tr>
+						<tr><th>The gap</th><td>Not streaming‑native; needs Kafka/Pulsar/Flink to ingest.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">Streaming‑first architecture — ingestion and analytics on one log.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Druid / Pinot</h3>
+				<p>Both excel at low‑latency analytics with columnar storage, min/max ranges, and bloom filters, ingesting from Kafka/Pulsar. But they are analytics <strong>sinks</strong>, not a source of truth — the data is duplicated out of the stream into the OLAP store.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Low‑latency real‑time OLAP.</td></tr>
+						<tr><th>The gap</th><td>Not a source of truth — data is duplicated from Kafka; no pub‑sub, replay, or consumer groups.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">Analytics run directly on the source‑of‑truth storage.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>ClickHouse <span style="color:var(--muted-2);font-weight:600;font-size:0.7em;">— a stronger competitor than it looks</span></h3>
+				<p>ClickHouse is one of the fastest analytical engines ever built, and the comparison is more about <strong>identity</strong> than features. The difference is philosophical:</p>
+				<code class="codeblock">ClickHouse:      OLAP database  →  later adds streaming
+Streaming Lake:  distributed event log  →  evolves into a lakehouse</code>
+				<p>The storage ideas are strikingly similar — ClickHouse's <strong>MergeTree</strong> (parts, columnar data, primary index, bloom filters, compression) maps almost one‑to‑one onto Streaming Lake's <strong>columnar pages + metadata + temporal index</strong> on a BookKeeper ledger. The decisive difference is that <strong>BookKeeper remains the source of truth</strong>: ClickHouse "streaming" is still <code>INSERT → table</code> — there are no subscriptions, consumer groups, replay cursors, acknowledgements, or message‑ordering APIs. And because the log is append‑only, every historical version <em>already exists</em> in BookKeeper, so point‑in‑time joins read history that is simply there rather than history you had to materialize into tables first.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Best‑in‑class real‑time OLAP — vectorized/SIMD execution, compression, mature optimizer, distributed joins, BI &amp; dashboards.</td></tr>
+						<tr><th>The gap</th><td>Not a messaging system or a source of truth — no pub‑sub, consumer groups, replay, or event log; data is ingested (Kafka/Pulsar engine) into MergeTree, i.e. moved into another store.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">The append‑only log <em>is</em> messaging, history, and analytical storage — no ingestion into a separate database.</td></tr>
+					</tbody>
+				</table>
+				<div class="callout">
+					<p><strong>Positioning:</strong> don't pitch "faster than ClickHouse" — a decade of vectorized‑SQL optimization is very hard to out‑run, and ClickHouse will stay better for dashboards, BI, complex aggregations, and distributed joins. Compete on <strong>architecture</strong>: messaging + history + analytics on one source‑of‑truth log, with native replay and no ETL — i.e. "we eliminate the <code>Kafka → Flink → Iceberg → Spark → ClickHouse</code> pipeline for event‑centric workloads," not "we replace ClickHouse."</p>
+				</div>
+
+				<h3>RisingWave</h3>
+				<p>Philosophically very close on the <em>query</em> side — streaming SQL, materialized views, joins. But it is state‑heavy and SQL‑focused rather than pub‑sub‑focused, and it consumes Kafka as its source rather than being the source.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Streaming SQL, materialized views, incremental joins.</td></tr>
+						<tr><th>The gap</th><td>State‑heavy; SQL‑first, not pub‑sub; reads from Kafka rather than being the source of truth.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">Log‑first architecture — the stream is the store.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Materialize</h3>
+				<p>Materialize delivers excellent streaming SQL on top of Kafka — but it requires Kafka, stores additional state, and is not itself the source of truth.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>Low‑latency streaming SQL / incremental views.</td></tr>
+						<tr><th>The gap</th><td>Requires Kafka and maintains a separate copy of state.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">No separate database — queries run on the log itself.</td></tr>
+					</tbody>
+				</table>
+
+				<h3>Event sourcing + Kafka</h3>
+				<p>Many teams already run Kafka + an event store + Iceberg. That's three systems, three copies, and three operational teams to keep in sync.</p>
+				<table class="cmp-table mini">
+					<tbody>
+						<tr><th>Solves well</th><td>A familiar pattern that covers messaging, history, and analytics — separately.</td></tr>
+						<tr><th>The gap</th><td>Three systems, three copies, three teams.</td></tr>
+						<tr><th class="own">Streaming Lake</th><td class="own">One append‑only log serves messaging, historical queries, temporal joins, and analytics.</td></tr>
+					</tbody>
+				</table>
+
+				<h2>The strongest answer</h2>
+				<p>The temptation is to argue "you don't need a second copy." But storage is cheap, and "save a copy" is a weak pitch on its own. The real value is everything that the <em>second copy and its pipeline</em> drag along with them:</p>
+				<ul>
+					<li><strong>Eliminate ETL pipelines</strong> — no Connect / Flink / Spark job to move stream → lake.</li>
+					<li><strong>Reduce operational complexity</strong> — one system to run, secure, and scale instead of three.</li>
+					<li><strong>Eliminate freshness lag</strong> — query the live log, not a table that commits minutes behind.</li>
+					<li><strong>Native temporal joins on the source‑of‑truth event log</strong> — point‑in‑time‑correct, leakage‑free features and training sets, with no Iceberg snapshots or separate historical tables.</li>
+					<li><strong>One programming model</strong> for streaming and analytics on the same data.</li>
+				</ul>
+
+				<div class="callout">
+					<p><strong>The narrative in one line:</strong> a Pulsar <em>Topic</em> is your <em>Table</em>, the <em>Stream</em> is your <em>Historical Dataset</em>, and the BookKeeper <em>Ledger</em> is your <em>Lakehouse Storage</em> — one write, one copy, one engine.</p>
+				</div>
+
+				<h2>An honest take</h2>
+				<p>Each system above is the right tool for the job it was built for, and a few capabilities here — native joins, the full SQL engine, distributed execution — are on the roadmap rather than shipping today (the matrix marks them ◐). For a generic warehouse, Iceberg + Spark stays simpler. But for an organization already built on event streams, running messaging, analytics, historical queries, and temporal joins <em>without</em> copying data into a separate lake is a genuinely different architecture — not "another lakehouse," but <strong>every stream is also a historical table and every table is also a stream, on one copy in BookKeeper.</strong></p>
+
+				<div class="callout" style="text-align:center;">
+					<p style="margin-bottom:18px;"><em>Curious where the copies disappear in your stack? We'll map your current pipeline to a single Streaming Lake.</em></p>
+					<a href="index.html#contact" class="btn btn-primary">Request early access →</a>
+				</div>
+
+			</div>
+		</main>
+
+		<!-- Footer -->
+		<footer class="site-footer">
+			<div class="container">
+				<div class="footer-grid">
+					<div>
+						<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+						<p>The Streaming Lakehouse for AI infrastructure — one copy of data for real-time agents, ML features, and SQL analytics, built on Apache Pulsar &amp; BookKeeper.</p>
+					</div>
+					<div class="footer-col">
+						<h5>Platform</h5>
+						<a href="streaming-lakehouse.html">Streaming Lakehouse</a>
+						<a href="index.html#platform">Capabilities</a>
+						<a href="index.html#usecases">AI Use Cases</a>
+						<a href="service.html">Pricing</a>
+					</div>
+					<div class="footer-col">
+						<h5>Company</h5>
+						<a href="blog1.html">Blog</a>
+						<a href="index.html#contact">Request access</a>
+						<a href="mailto:info@streambricks.com">info@streambricks.com</a>
+					</div>
+				</div>
+				<div class="footer-bottom">
+					<span>&copy; StreamBricks. All rights reserved.</span>
+					<span>Menlo Park, CA · USA</span>
+				</div>
+			</div>
+		</footer>
+
+		<script>
+			document.getElementById('navToggle').addEventListener('click', function () {
+				document.getElementById('navLinks').classList.toggle('open');
+			});
+		</script>
+
+	</body>
+</html>
