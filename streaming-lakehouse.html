@@ -51,7 +51,7 @@
 						<rect x="338" y="128" width="124" height="7" rx="3.5" fill="url(#bg1)"/>
 						<rect x="338" y="142" width="88" height="7" rx="3.5" fill="url(#bg1)" opacity="0.6"/>
 						<rect x="338" y="156" width="124" height="7" rx="3.5" fill="url(#bg1)"/>
-						<text x="400" y="178" text-anchor="middle" fill="#a3a8c3" font-family="JetBrains Mono, monospace" font-size="10">columnar Vortex pages</text>
+						<text x="400" y="178" text-anchor="middle" fill="#a3a8c3" font-family="JetBrains Mono, monospace" font-size="10">columnar pages</text>
 						<rect x="340" y="30" width="120" height="40" rx="12" fill="#161a33" stroke="rgba(140,150,220,0.3)"/>
 						<text x="400" y="55" text-anchor="middle" fill="#eef0fb" font-family="Inter" font-size="13" font-weight="600">Pulsar Producers</text>
 						<path d="M400 70 L400 110" stroke="url(#bg1)" stroke-width="2" stroke-dasharray="4 5"/>
@@ -88,8 +88,8 @@
 
 				<h2>The key innovation: columnar pages inside BookKeeper</h2>
 				<p>BookKeeper already does something convenient: after writing incoming data to its journal (a write-ahead log), it buffers entries in a <strong>write cache</strong> before batching them to the ledger device. The Streaming Lakehouse hooks into exactly that moment.</p>
-				<p>Instead of flushing row-oriented log entries straight to the <code>EntryLog</code>, we convert the buffered data into <strong>immutable, compressed columnar pages</strong> using <strong>Apache Vortex</strong>, and write those pages to disk:</p>
-				<code class="codeblock">Message Stream → Journal → Write Cache → <span class="kw">Vortex Columnar Page Builder</span> → Ledger Storage</code>
+				<p>Instead of flushing row-oriented log entries straight to the <code>EntryLog</code>, we convert the buffered data into <strong>immutable, compressed columnar pages</strong> using a <strong>columnar encoder</strong>, and write those pages to disk:</p>
+				<code class="codeblock">Message Stream → Journal → Write Cache → <span class="kw">Columnar Page Builder</span> → Ledger Storage</code>
 				<p>Each page (written in 2&ndash;4&nbsp;MB batches by default, configurable) is a self-describing analytics unit carrying columnar data, compression, statistics (min/max, null counts, cardinality), bloom filters, time ranges, and join indexes. For an <em>Employee</em> topic, each page records both a <strong>creation-time range</strong> and an <strong>employee_id range</strong> — so a query for <code>employee_id = 123</code> skips every page whose range can't contain it, reading only the few pages that could match. This turns BookKeeper from a log store into a Streaming Lakehouse storage engine, while still batching exactly as it does today.</p>
 
 				<h2>Two brokers over one storage layer</h2>
@@ -117,13 +117,13 @@ Department: dept=10, name=Engineering @ 09:00     and    dept=20, name=Platform 
 				<h3>Three layers make it scale</h3>
 				<p>Scanning everything would be hopeless — imagine a billion-row Employee topic joined to ten million Departments. Layered metadata means the engine reads almost nothing it doesn't need:</p>
 				<ul>
-					<li><strong>Layer 1 — Columnar Pages:</strong> the 2&ndash;4&nbsp;MB Vortex page batches holding the actual data.</li>
+					<li><strong>Layer 1 — Columnar Pages:</strong> the 2&ndash;4&nbsp;MB columnar page batches holding the actual data.</li>
 					<li><strong>Layer 2 — Page Metadata:</strong> <code>page_id, min_ts, max_ts, min_emp_id, max_emp_id</code> for pruning.</li>
 					<li><strong>Layer 3 — Join / Version Index:</strong> for each key, the page, row group, and time range of every version — sorted by <code>(key, event_time)</code> so the broker binary-searches for the latest version <code>≤</code> the query timestamp.</li>
 				</ul>
 				<p>Without Layer 3, joins degrade into full scans; with it, they become fast lookups.</p>
 
-				<h3>Execution: stand on Arrow, Vortex, and DataFusion</h3>
+				<h3>Execution: stand on Arrow and DataFusion</h3>
 				<p>Rather than writing a SQL engine from scratch, the DataLake Broker turns pages into Arrow record batches and lets a vectorized engine do the work:</p>
 				<code class="codeblock">BookKeeper Page → Arrow RecordBatch → DataFusion → Hash Join → Result</code>
 				<p>Filters, projections, joins, and aggregations come almost for free, exposed through SQL over Arrow Flight, JDBC, and REST — including <code>SELECT</code>, <code>JOIN</code>, <code>GROUP BY</code>, <code>WINDOW</code>, and <code>AS OF</code>.</p>
