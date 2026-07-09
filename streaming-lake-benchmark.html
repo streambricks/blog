@@ -1,0 +1,246 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>StreamBricks — Reading 128 MB instead of 10 GB: a Streaming Lake inner-join benchmark &amp; cost model</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="A runnable inner-join benchmark on a 10 GB / 2-day dataset: page-level pruning reads 1.4–9% of the data (11–72× less I/O), joins run broker-local with a 2.2 MB off-heap working set, and one engine replaces Kafka + Spark + S3 + Iceberg at roughly half the cost." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="assets/css/streambricks.css" />
+	</head>
+	<body>
+
+		<!-- Navigation -->
+		<nav class="site-nav">
+			<div class="container">
+				<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+				<div class="nav-links" id="navLinks">
+					<a href="index.html">Home</a>
+					<a href="streaming-lakehouse.html">Platform</a>
+					<a href="index.html#usecases">AI Use Cases</a>
+					<a href="blog1.html" class="active">Blog</a>
+					<a href="service.html">Pricing</a>
+				</div>
+				<div class="nav-cta">
+					<a href="index.html#contact" class="btn btn-ghost">Talk to us</a>
+					<a href="index.html#contact" class="btn btn-primary">Request early access</a>
+					<button class="nav-toggle" id="navToggle" aria-label="Menu">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+					</button>
+				</div>
+			</div>
+		</nav>
+
+		<main class="container">
+			<div class="article">
+
+				<div class="article-hero">
+					<span class="eyebrow">Benchmark &amp; cost</span>
+					<h1>Reading <span class="grad-text">128 MB</span> instead of 10 GB</h1>
+					<p class="dek">A selective inner join over a 10 GB, two-day dataset touches only <strong>1.4%</strong> of the bytes on disk, runs entirely on <strong>one broker</strong> with a <strong>2.2 MB</strong> join working set, and needs <strong>no Spark, no S3, no Iceberg</strong>. Streaming Lake isn't another query engine — it's a streaming-native analytical <em>storage</em> engine, and here is the measured proof.</p>
+				</div>
+
+				<div class="stats" style="margin:6px 0 34px;">
+					<div class="stat"><div class="num grad-text">72×</div><div class="label">less data read (1-hour window)</div></div>
+					<div class="stat"><div class="num grad-text">11×</div><div class="label">less data read (8-hour window)</div></div>
+					<div class="stat"><div class="num grad-text">1</div><div class="label">engine — ingest, store &amp; query</div></div>
+					<div class="stat"><div class="num grad-text">~2.4×</div><div class="label">cheaper than Kafka+Spark+Iceberg</div></div>
+				</div>
+
+				<h2>The one number that matters: bytes read</h2>
+				<p>Most lakehouse cost is paid at read time — bytes pulled from storage, decompressed, and pushed through a join. The clearest way to compare architectures is therefore the simplest: <strong>how many bytes did you have to read to answer the query?</strong></p>
+				<code class="codeblock">Same query, same 10 GB dataset:
+
+Spark + Iceberg   read  ~1.7–5 GB   (whole hour/day partitions, 128 MB row groups)
+<span class="kw">Streaming Lake</span>    read     128 MB   (1 MB pages, pruned before decode)</code>
+				<p>Reading ~70× fewer bytes is not a micro-optimization: fewer bytes read generally means less CPU, less memory, lower latency, and lower cost, all at once. Everything below is how Streaming Lake gets there — and where the claim stops.</p>
+
+				<h2>What we measured</h2>
+				<p>The workload is the hard case: a <strong>selective inner join on fresh data</strong>, the query pattern that lakehouses handle worst.</p>
+				<code class="codeblock">SELECT ...
+FROM   Person p INNER JOIN Employee e ON p.personId = e.personId
+WHERE  p.eventTime IN [t0, t0 + window)     -- prune by event time (5-min data ledgers)
+  AND  p.age    &lt;= 52                        -- clustered predicate  -> prune pages
+  AND  e.salary &lt;= 63000                     -- clustered predicate  -> prune pages</code>
+
+				<div class="cmp-table-wrap">
+					<table class="cmp-table mini">
+						<tbody>
+							<tr><th>Dataset</th><td>10 GB (Person 5 GB + Employee 5 GB), event-time ordered over 2 days</td></tr>
+							<tr><th>Data-ledger rollover</th><td>every 5 minutes → 576 ledgers/table, 4,608 pages/table, ~9.4M rows total</td></tr>
+							<tr><th>Page size</th><td>1 MiB (for reference, Iceberg's default Parquet row group is 128 MiB)</td></tr>
+							<tr><th>Join build table</th><td>off-heap, spilling to a real local file — memory-bounded on a single broker</td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<p>Metadata (the catalog, per-page min/max + bloom footers, and immutable column segments) is built for the <em>full</em> layout, so pruning runs against the true dataset. Only the pages that <em>survive</em> pruning are decoded and joined, and the off-heap build side spills to a real file on disk — so pruning ratios, join correctness, and the off-heap working set are all measured, not estimated.</p>
+
+				<h2>Results</h2>
+				<div class="cmp-table-wrap">
+					<table class="cmp-table">
+						<thead>
+							<tr>
+								<th>Query window</th>
+								<th>Data scanned</th>
+								<th>I/O reduction</th>
+								<th>Matches</th>
+								<th>Off-heap join state</th>
+								<th>Latency</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr class="own-row">
+								<th class="own">1-hour</th>
+								<td class="own">128 MiB <small>of ~9 GB · 1.39%</small></td>
+								<td class="own"><span class="grad-text" style="font-weight:800;">72×</span></td>
+								<td class="own">63,488</td>
+								<td class="own">2.2 MB <small>real disk</small></td>
+								<td class="own">187 ms</td>
+							</tr>
+							<tr class="own-row">
+								<th class="own">8-hour</th>
+								<td class="own">832 MiB <small>of ~9 GB · 9.03%</small></td>
+								<td class="own"><span class="grad-text" style="font-weight:800;">11×</span></td>
+								<td class="own">412,672</td>
+								<td class="own">14.6 MB <small>real disk</small></td>
+								<td class="own">1,110 ms</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<p style="text-align:center;color:var(--muted-2);font-size:13.5px;margin-top:14px;">Measured on this branch (single broker JVM). The narrower the query, the more it prunes — a 1-hour window reads <strong>1/72nd</strong> of the data. The join's entire working set for the selective query is <strong>2.2 MB</strong>.</p>
+
+				<h2>Why so little I/O — pruning before you decode</h2>
+				<p>Two design choices do the work:</p>
+				<ul>
+					<li><strong>Fine-grained pages.</strong> Streaming Lake's prune-and-read unit is a <strong>1 MiB page</strong>. A lakehouse's is typically a <strong>128 MiB</strong> row group (Iceberg's documented default for both the read split and the Parquet row group). A matching row anywhere inside a 128 MiB block forces the whole block to be read; a 1 MiB page is <strong>128× finer</strong>, so far less irrelevant data comes along for the ride.</li>
+					<li><strong>Metadata-first pruning.</strong> Each page carries min/max ranges plus a bloom (or exact set) for text columns, rolled up into immutable per-column <em>segment</em> indexes. Pruning runs on that metadata — <strong>before any Arrow batch is decoded</strong> — across three levels: <code>event-time → segment → page</code>. Only the survivors are ever read.</li>
+					<li><strong>Client-side columnar encoding.</strong> Producers send already-columnar <strong>Apache Arrow</strong> batches with a trailing stats footer. The broker stays a dumb, low-latency pipe: it persists the bytes and slices the footer into a durable page index. It never parses Arrow on the write path.</li>
+				</ul>
+				<p>On the probe side the join is <strong>late-materialized</strong>: only the join-key column is read per row, and the full row is reconstructed <em>only when a key matches</em> — so non-matching rows never pay to be decoded.</p>
+
+				<h2>One engine, not five</h2>
+				<p>The other half of the cost story is architectural. The standard stack copies data through five systems before a query can run, and pays for each one continuously:</p>
+				<code class="codeblock">Producer → Kafka → Spark Streaming → S3 + Iceberg → Spark SQL
+             ▲          ▲                 ▲              ▲
+          brokers   always-on         storage +     shuffle · sort ·
+                    ETL cluster       compaction     hash join per query</code>
+				<p>Streaming Lake keeps a single copy in BookKeeper and serves both pub-sub and analytics from it — no ETL job, no second store, no manifest maintenance, no object-store GET/LIST charges:</p>
+				<code class="codeblock">Producer → Pulsar → BookKeeper → Segment metadata → <span class="kw">Broker query</span>
+                   (one durable copy = stream + table + history)</code>
+
+				<h2>Cost comparison</h2>
+				<p>Modeled on published AWS list prices for a sustained pipeline (~10 MB/s ingest, 7-day hot set, ~1,000 selective joins/day). Streaming Lake numbers are the <em>measured</em> read behavior applied to that infrastructure; the competitor column is <em>modeled</em> from list prices and each system's documented defaults.</p>
+				<div class="cmp-table-wrap">
+					<table class="cmp-table">
+						<thead>
+							<tr><th>&nbsp;</th><th>Kafka + Spark + S3 + Iceberg <small>modeled</small></th><th class="own">Streaming Lake</th></tr>
+						</thead>
+						<tbody>
+							<tr><th>Monthly TCO</th><td>~$7,689</td><td class="own"><strong>~$3,216</strong><small>HDD ledgers</small></td></tr>
+							<tr><th>Systems to operate</th><td>5</td><td class="own"><strong>1</strong><small>Pulsar + BookKeeper</small></td></tr>
+							<tr><th>Data read / selective query</th><td>2–6× more<small>128 MB row groups</small></td><td class="own"><strong>128 MiB</strong><small>1.4% of data</small></td></tr>
+							<tr><th>Join working set</th><td>shuffle across the cluster</td><td class="own"><strong>2.2 MB</strong><small>off-heap, one broker</small></td></tr>
+							<tr><th>Query latency</th><td>seconds–minutes<small>spin-up · shuffle</small></td><td class="own"><strong>~1 s</strong><small>measured</small></td></tr>
+							<tr><th>Freshness at query time</th><td>after sink + compaction</td><td class="own"><strong>live</strong></td></tr>
+						</tbody>
+					</table>
+				</div>
+				<p style="text-align:center;color:var(--muted-2);font-size:13.5px;margin-top:14px;">Storage is split the way it is actually deployed: a small 100 GB NVMe journal + a cheap HDD (st1) ledger device in production. Swap the ledger to NVMe (matching the perf run) and Streaming Lake is ~$3,846/mo — still roughly half.</p>
+
+				<h2>How it stacks up</h2>
+				<p>A qualitative read of where the selective-join workload lands across four representative systems:</p>
+				<div class="cmp-table-wrap">
+					<table class="cmp-table">
+						<thead>
+							<tr><th>Area</th><th>Kafka + Spark + Iceberg</th><th>Snowflake</th><th>ClickHouse</th><th class="own">Streaming Lake</th></tr>
+						</thead>
+						<tbody>
+							<tr><th>Streaming ingestion</th><td>Excellent</td><td>External pipeline</td><td>Good</td><td class="own">Excellent</td></tr>
+							<tr><th>Fresh-data query</th><td>Minutes<small>commit cadence</small></td><td>Good</td><td>Excellent</td><td class="own">Excellent</td></tr>
+							<tr><th>Predicate pruning</th><td>File + row group</td><td>Micro-partitions</td><td>Marks / granules</td><td class="own">Page-level</td></tr>
+							<tr><th>Join execution</th><td>Distributed shuffle</td><td>Distributed</td><td>Local or distributed</td><td class="own">Broker-local + off-heap</td></tr>
+							<tr><th>Infrastructure</th><td>Kafka+Spark+S3+Iceberg</td><td>Warehouse</td><td>Cluster</td><td class="own">Broker + BookKeeper</td></tr>
+							<tr><th>Read amplification</th><td>Medium</td><td>Medium</td><td>Low</td><td class="own">Potentially very low</td></tr>
+							<tr><th>Operational complexity</th><td>High</td><td>Low <small>managed</small></td><td>Medium</td><td class="own">Medium</td></tr>
+						</tbody>
+					</table>
+				</div>
+				<p style="text-align:center;color:var(--muted-2);font-size:13.5px;margin-top:14px;">Each system is excellent at what it was built for. ClickHouse in particular remains a best-in-class analytical engine; the distinction here is <em>architectural</em> — Streaming Lake unifies ingestion, storage, indexing, and query on one source-of-truth log.</p>
+
+				<h2>An honest take</h2>
+				<p>The measured wins are real, but a few things deserve careful phrasing:</p>
+				<ul>
+					<li><strong>No distributed shuffle — for this execution model.</strong> Streaming Lake executes highly selective joins <em>locally on a broker</em>, avoiding the distributed shuffle phase common in Spark-based lakehouses. A future deployment that joins across many brokers or partitions may still need some coordination or data movement; the "no shuffle" result is for the single-broker path benchmarked here.</li>
+					<li><strong>Selective is the sweet spot.</strong> A 2.2 MB working set reflects a highly selective query. Less selective predicates and larger build sides should be tested before generalizing — which is exactly why the build table is already off-heap and spills to disk.</li>
+					<li><strong>Measured vs. modeled.</strong> The Streaming Lake read/prune/join numbers are measured. The competitor cost and comparison are modeled from public list prices and documented defaults, not a head-to-head run.</li>
+				</ul>
+
+				<h2>What's next</h2>
+				<p>To turn a strong result into an unarguable one, the roadmap for this benchmark is:</p>
+				<ul>
+					<li><strong>Scale it</strong> — 100 GB, 1 TB, 10 TB. The architecture should hold; showing it matters.</li>
+					<li><strong>Real baselines</strong> — the same SQL on Spark + Iceberg, DuckDB, and ClickHouse, side by side.</li>
+					<li><strong>Publish bytes read, CPU-seconds, and shuffle GB directly</strong> — not just ratios and latency. "Spark read 10 GB, Streaming Lake read 128 MB; Spark shuffled X GB, Streaming Lake shuffled 0" is the comparison readers can act on.</li>
+				</ul>
+
+				<div class="callout">
+					<p><strong>In one line:</strong> Streaming Lake integrates streaming ingestion, storage, indexing, and query execution into a single architecture that minimizes storage reads through page-level pruning — enabling selective analytical joins with small working sets, and without a separate ETL or distributed query tier.</p>
+				</div>
+
+				<h2>Reproduce it</h2>
+				<p>The benchmark is a normal broker test, opt-in via an environment variable, driving the same join engine that ships in the query tier:</p>
+				<code class="codeblock">SL_BENCH_RUN=true SL_BENCH_TOTALGB=10 SL_BENCH_WINDOWHOURS=8 \
+  ./gradlew :pulsar-broker:test --tests "*StreamLakeJoinBenchmark" \
+  --no-daemon --no-build-cache --rerun-tasks</code>
+				<p style="color:var(--muted-2);font-size:13.5px;">Harness: <code>StreamLakeJoinBenchmark</code>. Full methodology, byte-level formats, and the complete cost model live in the project's <code>DESIGN.md</code> and <code>BENCHMARK.md</code>.</p>
+
+				<div class="callout" style="text-align:center;">
+					<p style="margin-bottom:18px;"><em>Want to see this on your data and your query shapes? We'll benchmark a selective join against your current stack.</em></p>
+					<a href="index.html#contact" class="btn btn-primary">Request early access →</a>
+				</div>
+
+			</div>
+		</main>
+
+		<!-- Footer -->
+		<footer class="site-footer">
+			<div class="container">
+				<div class="footer-grid">
+					<div>
+						<a class="brand" href="index.html"><img src="assets/logo-mark.svg" alt="StreamBricks logo" />Stream<b class="grad-text">Bricks</b></a>
+						<p>The Streaming Lakehouse for AI infrastructure — one copy of data for real-time agents, ML features, and SQL analytics, built on Apache Pulsar &amp; BookKeeper.</p>
+					</div>
+					<div class="footer-col">
+						<h5>Platform</h5>
+						<a href="streaming-lakehouse.html">Streaming Lakehouse</a>
+						<a href="index.html#platform">Capabilities</a>
+						<a href="index.html#usecases">AI Use Cases</a>
+						<a href="service.html">Pricing</a>
+					</div>
+					<div class="footer-col">
+						<h5>Company</h5>
+						<a href="blog1.html">Blog</a>
+						<a href="index.html#contact">Request access</a>
+						<a href="mailto:info@streambricks.com">info@streambricks.com</a>
+					</div>
+				</div>
+				<div class="footer-bottom">
+					<span>&copy; StreamBricks. All rights reserved.</span>
+					<span>Menlo Park, CA · USA</span>
+				</div>
+			</div>
+		</footer>
+
+		<script>
+			document.getElementById('navToggle').addEventListener('click', function () {
+				document.getElementById('navLinks').classList.toggle('open');
+			});
+		</script>
+
+	</body>
+</html>
