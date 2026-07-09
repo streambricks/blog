@@ -1,9 +1,9 @@
 <!DOCTYPE HTML>
 <html lang="en">
 	<head>
-		<title>StreamBricks — Reading 128 MB instead of 10 GB: a Streaming Lake inner-join benchmark &amp; cost model</title>
+		<title>StreamBricks — Beyond SQL Benchmarks: The True Cost of Streaming Analytics</title>
 		<meta charset="utf-8" />
-		<meta name="description" content="A runnable inner-join benchmark on a 10 GB / 2-day dataset: page-level pruning reads 1.4–9% of the data (11–72× less I/O), joins run broker-local with a 2.2 MB off-heap working set, and one engine replaces Kafka + Spark + S3 + Iceberg at roughly half the cost." />
+		<meta name="description" content="An end-to-end cost and performance comparison of Kafka + Spark + Iceberg, Snowflake, ClickHouse, and Streaming Lake — measuring what actually drives cost: bytes read (11–72× less I/O), the number of systems you run, and the price of every query." />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg" />
 		<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,9 +38,9 @@
 			<div class="article">
 
 				<div class="article-hero">
-					<span class="eyebrow">Benchmark &amp; cost</span>
-					<h1>Reading <span class="grad-text">128 MB</span> instead of 10 GB</h1>
-					<p class="dek">A selective inner join over a 10 GB, two-day dataset touches only <strong>1.4%</strong> of the bytes on disk, runs entirely on <strong>one broker</strong> with a <strong>2.2 MB</strong> join working set, and needs <strong>no Spark, no S3, no Iceberg</strong>. Streaming Lake isn't another query engine — it's a streaming-native analytical <em>storage</em> engine, and here is the measured proof.</p>
+					<span class="eyebrow">Cost &amp; performance</span>
+					<h1>Beyond SQL benchmarks: the true cost of <span class="grad-text">streaming analytics</span></h1>
+					<p class="dek">An end-to-end comparison of Kafka&nbsp;+&nbsp;Spark&nbsp;+&nbsp;Iceberg, Snowflake, ClickHouse, and Streaming Lake. The real cost of streaming analytics isn't a SQL engine's raw speed — it's the <strong>bytes you read</strong>, the <strong>systems you run</strong>, and the <strong>price of every query</strong>. Here it is, backed by a runnable benchmark.</p>
 				</div>
 
 				<div class="stats" style="margin:6px 0 34px;">

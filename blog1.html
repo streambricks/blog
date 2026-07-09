@@ -46,24 +46,26 @@
 			<div class="container">
 				<div class="post-grid">
 
-					<!-- Post: inner-join benchmark & cost -->
+					<!-- Post: cost & performance comparison -->
 					<article class="post-card">
 						<a href="streaming-lake-benchmark.html" class="post-thumb">
 							<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 								<defs><linearGradient id="tbench" x1="0" y1="0" x2="400" y2="200" gradientUnits="userSpaceOnUse"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
 								<rect width="400" height="200" fill="#0d0f1d"/>
-								<line x1="56" y1="160" x2="360" y2="160" stroke="url(#tbench)" stroke-width="1.2" opacity="0.5"/>
-								<rect x="90" y="40" width="70" height="120" rx="4" fill="#fca5a5" opacity="0.85"/>
-								<rect x="240" y="150" width="70" height="10" rx="3" fill="url(#tbench)"/>
-								<text x="125" y="32" fill="#fca5a5" font-family="JetBrains Mono, monospace" font-size="15" text-anchor="middle">10 GB</text>
-								<text x="275" y="140" fill="#6ee7b7" font-family="JetBrains Mono, monospace" font-size="15" text-anchor="middle">128 MB</text>
+								<line x1="56" y1="168" x2="360" y2="168" stroke="url(#tbench)" stroke-width="1.2" opacity="0.5"/>
+								<rect x="88" y="44" width="74" height="124" rx="4" fill="#fca5a5" opacity="0.85"/>
+								<rect x="238" y="117" width="74" height="51" rx="4" fill="url(#tbench)"/>
+								<text x="125" y="36" fill="#fca5a5" font-family="JetBrains Mono, monospace" font-size="15" text-anchor="middle">$7,689</text>
+								<text x="275" y="108" fill="#6ee7b7" font-family="JetBrains Mono, monospace" font-size="15" text-anchor="middle">$3,169</text>
+								<text x="125" y="188" fill="#8b93b7" font-family="Inter, sans-serif" font-size="12" text-anchor="middle">Kafka+Spark+Iceberg</text>
+								<text x="275" y="188" fill="#8b93b7" font-family="Inter, sans-serif" font-size="12" text-anchor="middle">Streaming Lake</text>
 							</svg>
 						</a>
 						<div class="post-body">
-							<span class="post-tag">Benchmark</span>
-							<h3><a href="streaming-lake-benchmark.html">Reading 128 MB instead of 10 GB</a></h3>
-							<p>A measured inner-join benchmark: page-level pruning reads 1.4–9% of the data (11–72× less I/O), joins run broker-local with a 2.2 MB working set, and one engine replaces Kafka + Spark + S3 + Iceberg at ~half the cost.</p>
-							<a href="streaming-lake-benchmark.html" class="post-more grad-text">Read the benchmark →</a>
+							<span class="post-tag">Cost &amp; performance</span>
+							<h3><a href="streaming-lake-benchmark.html">Beyond SQL benchmarks: the true cost of streaming analytics</a></h3>
+							<p>An end-to-end comparison of Kafka + Spark + Iceberg, Snowflake, ClickHouse, and Streaming Lake — measured read amplification (11–72× less I/O), a one-engine architecture, and a line-by-line cost model (~2.4× cheaper).</p>
+							<a href="streaming-lake-benchmark.html" class="post-more grad-text">Read the comparison →</a>
 						</div>
 					</article>
 
