@@ -47,7 +47,7 @@
 					<div class="stat"><div class="num grad-text">72×</div><div class="label">less data read (1-hour window)</div></div>
 					<div class="stat"><div class="num grad-text">11×</div><div class="label">less data read (8-hour window)</div></div>
 					<div class="stat"><div class="num grad-text">1</div><div class="label">engine — ingest, store &amp; query</div></div>
-					<div class="stat"><div class="num grad-text">~2.4×</div><div class="label">cheaper than Kafka+Spark+Iceberg</div></div>
+					<div class="stat"><div class="num grad-text">~1.4×</div><div class="label">cheaper — and no S3 at all</div></div>
 				</div>
 
 				<h2>The one number that matters: bytes read</h2>
@@ -141,8 +141,9 @@ WHERE  p.eventTime IN [t0, t0 + window)     -- prune by event time (5-min data l
 							<tr><th>&nbsp;</th><th>Kafka + Spark + S3 + Iceberg <small>modeled</small></th><th class="own">Streaming Lake</th></tr>
 						</thead>
 						<tbody>
-							<tr><th>Monthly TCO</th><td>~$7,689</td><td class="own"><strong>~$3,169</strong><small>HDD ledgers</small></td></tr>
+							<tr><th>Monthly TCO</th><td>~$7,689</td><td class="own"><strong>~$5,420</strong><small>all data on BookKeeper</small></td></tr>
 							<tr><th>Systems to operate</th><td>5</td><td class="own"><strong>1</strong><small>Pulsar + BookKeeper</small></td></tr>
+							<tr><th>Object store</th><td>S3 required<small>Iceberg</small></td><td class="own"><strong>none</strong><small>BookKeeper is the store</small></td></tr>
 							<tr><th>Data read / selective query</th><td>2–6× more<small>128 MB row groups</small></td><td class="own"><strong>128 MiB</strong><small>1.4% of data</small></td></tr>
 							<tr><th>Join working set</th><td>shuffle across the cluster</td><td class="own"><strong>2.2 MB</strong><small>off-heap, one broker</small></td></tr>
 							<tr><th>Query latency</th><td>seconds–minutes<small>spin-up · shuffle</small></td><td class="own"><strong>~1 s</strong><small>measured</small></td></tr>
@@ -150,7 +151,7 @@ WHERE  p.eventTime IN [t0, t0 + window)     -- prune by event time (5-min data l
 						</tbody>
 					</table>
 				</div>
-				<p style="text-align:center;color:var(--muted-2);font-size:13.5px;margin-top:14px;">Storage is split the way it is actually deployed: a small 100 GB NVMe journal + a cheap HDD (st1) ledger device in production. Swap the ledger to NVMe (matching the perf run) and Streaming Lake is ~$3,799/mo — still roughly half.</p>
+				<p style="text-align:center;color:var(--muted-2);font-size:13.5px;margin-top:14px;"><strong>No object store, by design.</strong> Streaming Lake holds the entire dataset on BookKeeper — there is no S3 line at all. RF-3 (3× bytes) is the conservative durability choice; Pulsar's default RF-2 brings the total to ~$4,250/mo (~1.8×). Per byte, RF-3-on-HDD is dearer than S3's erasure coding — the win is deleting the object store, the ETL, and the query cluster around it, not the storage rate.</p>
 
 				<h3>What you actually run — line by line</h3>
 				<p>Streaming Lake spends money only where speed is needed: <strong>NVMe on the bookie journal and the query-broker spill</strong>, <strong>cheap HDD for the bulk ledger data</strong>, and <strong>cheap stateless pub-sub brokers</strong>. The five-component stack pays for a Kafka cluster, two always-on Spark roles, and object storage on top of each other.</p>
@@ -164,10 +165,9 @@ WHERE  p.eventTime IN [t0, t0 + window)     -- prune by event time (5-min data l
 							<tr><th>Spark Streaming ingest <small>always-on EMR</small></th><td>$1,102</td><th class="own">Query brokers <small><strong>NVMe</strong> · runs joins + off-heap spill · 2 × r5.2xlarge</small></th><td class="own">$777</td></tr>
 							<tr><th>S3 storage <small>Iceberg data + metadata</small></th><td>$598</td><th class="own">Bookie compute <small>3 × m5.2xlarge</small></th><td class="own">$841</td></tr>
 							<tr><th>Iceberg compaction <small>periodic Spark</small></th><td>$550</td><th class="own">Bookie journal <small><strong>NVMe</strong> · 3 × 100 GB</small></th><td class="own">$24</td></tr>
-							<tr><th>Spark SQL query <small>per query, 1,000/day</small></th><td>$3,000</td><th class="own">Bookie ledger <small><strong>HDD (st1)</strong> · 18 TB RF-3</small></th><td class="own">$810</td></tr>
-							<tr><th>&nbsp;</th><td>&nbsp;</td><th class="own">Cold offload → S3 <small>&gt; 7 days</small></th><td class="own">$437</td></tr>
-							<tr><th>&nbsp;</th><td>&nbsp;</td><th class="own">Query compute <small>runs on the NVMe query brokers</small></th><td class="own">$0</td></tr>
-							<tr class="own-row"><th>Total</th><td><strong>~$7,689</strong></td><th class="own">Total</th><td class="own"><strong>~$3,169</strong></td></tr>
+							<tr><th>Spark SQL query <small>per query, 1,000/day</small></th><td>$3,000</td><th class="own">Bookie ledger <small><strong>HDD (st1)</strong> · full 30-day dataset · RF-3 ≈ 78 TB</small></th><td class="own">$3,499</td></tr>
+							<tr><th>&nbsp;</th><td>&nbsp;</td><th class="own">Query execution <small>on the query brokers above — no per-query cluster</small></th><td class="own">incl.</td></tr>
+							<tr class="own-row"><th>Total</th><td><strong>~$7,689</strong></td><th class="own">Total</th><td class="own"><strong>~$5,420</strong></td></tr>
 						</tbody>
 					</table>
 				</div>
